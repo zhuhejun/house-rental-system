@@ -87,6 +87,10 @@ const routes = [
         component: () => import(`@/views/service/RentalContract.vue`),
       },
       {
+        path: 'rental-termination',
+        component: () => import(`@/views/service/RentalTermination.vue`),
+      },
+      {
         path: 'rental-bill',
         component: () => import(`@/views/service/RentalBill.vue`),
       }
@@ -186,6 +190,14 @@ const routes = [
         meta: { requireAuth: true },
       },
       {
+        path: "/rental-termination-manage",
+        name: '退租管理',
+        show: true,
+        icon: 'el-icon-switch-button',
+        component: () => import(`@/views/admin/RentalTerminationManage.vue`),
+        meta: { requireAuth: true },
+      },
+      {
         path: "/rental-bill-manage",
         name: '租赁账单管理',
         show: true,
@@ -259,6 +271,12 @@ const routes = [
         path: "/my-rental-contract",
         name: '我的合同',
         component: () => import(`@/views/user/MyRentalContract.vue`),
+        meta: { requireAuth: true },
+      },
+      {
+        path: "/my-rental-termination",
+        name: '退租管理',
+        component: () => import(`@/views/user/MyRentalTermination.vue`),
         meta: { requireAuth: true },
       },
       {

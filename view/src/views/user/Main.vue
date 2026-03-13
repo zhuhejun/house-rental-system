@@ -218,6 +218,7 @@ export default {
                 { path: '/house-news', icon: 'el-icon-tickets', title: '房屋资讯' },
                 { path: '/my-house-order-info', icon: 'el-icon-c-scale-to-original', title: '预约看房' },
                 { path: '/my-rental-contract', icon: 'el-icon-document', title: '我的合同' },
+                { path: '/my-rental-termination', icon: 'el-icon-switch-button', title: '退租管理' },
                 { path: '/my-rental-bill', icon: 'el-icon-wallet', title: '我的账单' },
                 { path: '/notice-list', icon: '', title: '系统公告' },
                 { path: '/my-save', icon: '', title: '我的收藏' },

@@ -28,7 +28,8 @@
                     <div @click="select('2-3')"><i class="el-icon-s-data"></i>流量统计</div>
                     <div @click="select('3')"><i class="el-icon-s-finance"></i>预约看房</div>
                     <div @click="select('4')"><i class="el-icon-document"></i>租赁合同</div>
-                    <div @click="select('5')"><i class="el-icon-wallet"></i>租赁账单</div>
+                    <div @click="select('5')"><i class="el-icon-switch-button"></i>退租管理</div>
+                    <div @click="select('6')"><i class="el-icon-wallet"></i>租赁账单</div>
                 </div>
             </div>
             <div class="right">
@@ -61,7 +62,8 @@ export default {
                 '2-3': 'flow-index',
                 '3': 'house-order-info',
                 '4': 'rental-contract',
-                '5': 'rental-bill'
+                '5': 'rental-termination',
+                '6': 'rental-bill'
             }
             this.$router.push(`/service-center/${pathsMap[index]}`);
         },
