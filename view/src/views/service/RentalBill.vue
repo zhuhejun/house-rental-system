@@ -28,7 +28,7 @@
                     {{ billTypeText(scope.row.billType) }}
                 </template>
             </el-table-column>
-            <el-table-column prop="billMonth" label="账单月份" width="120"></el-table-column>
+            <el-table-column prop="billMonth" label="账期" width="160"></el-table-column>
             <el-table-column prop="totalAmount" label="应付金额" width="120"></el-table-column>
             <el-table-column label="水电方式" width="120">
                 <template #default="scope">
@@ -78,9 +78,10 @@
                 </el-select>
                 <div class="grid-two">
                     <div>
-                        <p>*账单月份</p>
+                        <p>*账期开始月份</p>
                         <el-date-picker v-model="form.billMonth" type="month" value-format="yyyy-MM"
-                            placeholder="选择月份" style="width: 100%;"></el-date-picker>
+                            placeholder="选择开始月份" style="width: 100%;" :picker-options="billMonthPickerOptions">
+                        </el-date-picker>
                     </div>
                     <div>
                         <p>*到期日期</p>
@@ -90,7 +91,7 @@
                 </div>
                 <div class="grid-two">
                     <div>
-                        <p>*租金</p>
+                        <p>*本期租金</p>
                         <el-input-number v-model="form.rentAmount" :min="1" :precision="2" :step="100"
                             style="width: 100%;"></el-input-number>
                     </div>
@@ -102,7 +103,7 @@
                         </el-select>
                     </div>
                 </div>
-                <div class="grid-two">
+                <div v-if="form.utilityPaymentMode === 2" class="grid-two">
                     <div>
                         <p>水费</p>
                         <el-input-number v-model="form.waterAmount" :min="0" :precision="2" :step="10"
@@ -116,6 +117,15 @@
                 </div>
                 <div class="tip">
                     自行缴费模式下，租客只在线支付租金，水电费通过上传缴费凭证完成核验。
+                </div>
+                <div v-if="selectedContract" class="period-card">
+                    <div><strong>合同月租金：</strong>{{ formatMoney(selectedContract.monthlyRent) }}</div>
+                    <div><strong>当前付款周期：</strong>{{ selectedContract.payCycle }}</div>
+                    <div><strong>本期账期：</strong>{{ billPeriodPreview || '请选择正确的开始月份' }}</div>
+                    <div><strong>本期应收租金：</strong>{{ suggestedRentAmount }}</div>
+                    <div class="period-formula">
+                        计算方式：{{ formatMoney(selectedContract.monthlyRent) }} × {{ getPayMonths(selectedContract) }}个月
+                    </div>
                 </div>
                 <p>备注</p>
                 <el-input type="textarea" :rows="3" v-model="form.remark" placeholder="补充账单说明"></el-input>
@@ -133,7 +143,7 @@
                 <div><strong>房源：</strong>{{ detail.houseName }}</div>
                 <div><strong>租客：</strong>{{ detail.tenantName }}</div>
                 <div><strong>账单类型：</strong>{{ billTypeText(detail.billType) }}</div>
-                <div><strong>账单月份：</strong>{{ detail.billMonth || '-' }}</div>
+                <div><strong>账期：</strong>{{ detail.billMonth || '-' }}</div>
                 <div><strong>租金：</strong>{{ detail.rentAmount }}</div>
                 <div><strong>水费：</strong>{{ detail.waterAmount }}</div>
                 <div><strong>电费：</strong>{{ detail.electricAmount }}</div>
@@ -190,12 +200,34 @@ export default {
             contractOptions: [],
             form: this.getDefaultForm(),
             detail: {},
+            selectedContract: null,
+            existingBillPeriods: [],
             auditForm: {
                 id: null,
                 utilityProofStatus: 3,
                 utilityProofNote: '',
             }
         };
+    },
+    computed: {
+        billMonthPickerOptions() {
+            return {
+                disabledDate: this.disableBillMonth,
+            };
+        },
+        billPeriodPreview() {
+            if (!this.selectedContract || !this.form.billMonth) {
+                return '';
+            }
+            return this.formatBillPeriod(this.form.billMonth, this.getPayMonths(this.selectedContract));
+        },
+        suggestedRentAmount() {
+            if (!this.selectedContract) {
+                return '0.00';
+            }
+            const amount = Number(this.selectedContract.monthlyRent || 0) * this.getPayMonths(this.selectedContract);
+            return amount.toFixed(2);
+        }
     },
     created() {
         this.refresh();
@@ -212,6 +244,67 @@ export default {
                 electricAmount: 0,
                 remark: '',
             };
+        },
+        formatMoney(value) {
+            return Number(value || 0).toFixed(2);
+        },
+        getPayMonths(contract) {
+            const type = Number((contract || {}).depositMethodId);
+            const map = { 1: 1, 2: 3, 3: 1, 4: 3 };
+            return map[type] || 1;
+        },
+        monthToNumber(month) {
+            if (!month) {
+                return null;
+            }
+            const [year, monthValue] = month.split('-').map(Number);
+            return year * 12 + monthValue - 1;
+        },
+        addMonths(month, offset) {
+            const monthNumber = this.monthToNumber(month);
+            if (monthNumber === null) {
+                return '';
+            }
+            const target = monthNumber + offset;
+            const year = Math.floor(target / 12);
+            const monthValue = (target % 12) + 1;
+            return `${year}-${String(monthValue).padStart(2, '0')}`;
+        },
+        formatBillPeriod(startMonth, payMonths) {
+            if (!startMonth) {
+                return '';
+            }
+            if (!payMonths || payMonths <= 1) {
+                return startMonth;
+            }
+            return `${startMonth}至${this.addMonths(startMonth, payMonths - 1)}`;
+        },
+        disableBillMonth(date) {
+            if (!this.selectedContract) {
+                return false;
+            }
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const candidateMonth = `${year}-${month}`;
+            const contractStartMonth = (this.selectedContract.startDate || '').slice(0, 7);
+            const contractEndMonth = (this.selectedContract.endDate || '').slice(0, 7);
+            const payMonths = this.getPayMonths(this.selectedContract);
+            const candidateNumber = this.monthToNumber(candidateMonth);
+            const contractStartNumber = this.monthToNumber(contractStartMonth);
+            const contractEndNumber = this.monthToNumber(contractEndMonth);
+            if (candidateNumber === null || contractStartNumber === null || contractEndNumber === null) {
+                return false;
+            }
+            if (candidateNumber < contractStartNumber) {
+                return true;
+            }
+            if ((candidateNumber - contractStartNumber) % payMonths !== 0) {
+                return true;
+            }
+            if (this.monthToNumber(this.addMonths(candidateMonth, payMonths - 1)) > contractEndNumber) {
+                return true;
+            }
+            return this.existingBillPeriods.includes(this.formatBillPeriod(candidateMonth, payMonths));
         },
         billTypeText(type) {
             return type === 1 ? '押金单' : '租金单';
@@ -276,7 +369,7 @@ export default {
                 const { data } = await this.$axios.post('/rental-contract/listLandlord', {
                     current: 1,
                     size: 1000,
-                    status: 3,
+                    status: 4,
                 });
                 this.contractOptions = data || [];
             } catch (error) {
@@ -285,15 +378,56 @@ export default {
         },
         openCreateDialog() {
             this.form = this.getDefaultForm();
+            this.selectedContract = null;
+            this.existingBillPeriods = [];
             this.dialogVisible = true;
         },
-        handleContractChange(contractId) {
+        async handleContractChange(contractId) {
             const target = this.contractOptions.find(item => item.id === contractId);
             if (!target) {
                 return;
             }
-            this.form.rentAmount = target.monthlyRent;
+            this.selectedContract = target;
+            const payMonths = this.getPayMonths(target);
+            this.form.rentAmount = Number(target.monthlyRent || 0) * payMonths;
             this.form.utilityPaymentMode = target.utilityPaymentMode || 2;
+            await this.fetchExistingPeriods(contractId);
+            this.form.billMonth = this.findNextAvailableMonth(target);
+        },
+        async fetchExistingPeriods(contractId) {
+            try {
+                const { data } = await this.$axios.post('/rental-bill/listLandlord', {
+                    current: 1,
+                    size: 1000,
+                    contractId,
+                    billType: 2,
+                });
+                this.existingBillPeriods = (data || []).map(item => item.billMonth).filter(Boolean);
+            } catch (error) {
+                console.error('加载账期失败:', error);
+                this.existingBillPeriods = [];
+            }
+        },
+        findNextAvailableMonth(contract) {
+            const contractStartMonth = (contract.startDate || '').slice(0, 7);
+            const contractEndMonth = (contract.endDate || '').slice(0, 7);
+            const payMonths = this.getPayMonths(contract);
+            const startNumber = this.monthToNumber(contractStartMonth);
+            const endNumber = this.monthToNumber(contractEndMonth);
+            if (startNumber === null || endNumber === null) {
+                return '';
+            }
+            for (let current = startNumber; current <= endNumber; current += payMonths) {
+                const year = Math.floor(current / 12);
+                const monthValue = (current % 12) + 1;
+                const month = `${year}-${String(monthValue).padStart(2, '0')}`;
+                const period = this.formatBillPeriod(month, payMonths);
+                if (!this.existingBillPeriods.includes(period)
+                    && this.monthToNumber(this.addMonths(month, payMonths - 1)) <= endNumber) {
+                    return month;
+                }
+            }
+            return '';
         },
         async saveBill() {
             try {
@@ -373,6 +507,21 @@ export default {
 
 .tip {
     margin: 12px 0;
+    color: #909399;
+    font-size: 12px;
+}
+
+.period-card {
+    margin: 12px 0;
+    padding: 12px 14px;
+    border-radius: 6px;
+    background: #f5f7fa;
+    color: #606266;
+    display: grid;
+    gap: 6px;
+}
+
+.period-formula {
     color: #909399;
     font-size: 12px;
 }

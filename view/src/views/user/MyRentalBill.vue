@@ -23,7 +23,7 @@
                     {{ billTypeText(scope.row.billType) }}
                 </template>
             </el-table-column>
-            <el-table-column prop="billMonth" label="账单月份" width="120"></el-table-column>
+            <el-table-column prop="billMonth" label="账期" width="160"></el-table-column>
             <el-table-column prop="totalAmount" label="应付金额" width="120"></el-table-column>
             <el-table-column label="水电方式" width="120">
                 <template #default="scope">
@@ -69,7 +69,7 @@
                 <div><strong>合同编号：</strong>{{ detail.contractNo }}</div>
                 <div><strong>房源：</strong>{{ detail.houseName }}</div>
                 <div><strong>账单类型：</strong>{{ billTypeText(detail.billType) }}</div>
-                <div><strong>账单月份：</strong>{{ detail.billMonth || '-' }}</div>
+                <div><strong>账期：</strong>{{ detail.billMonth || '-' }}</div>
                 <div><strong>租金：</strong>{{ detail.rentAmount }}</div>
                 <div><strong>水费：</strong>{{ detail.waterAmount }}</div>
                 <div><strong>电费：</strong>{{ detail.electricAmount }}</div>

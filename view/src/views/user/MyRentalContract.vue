@@ -5,10 +5,11 @@
                 <Tab :buttons="[
                     { label: '全部', value: 'null' },
                     { label: '待确认', value: '2' },
-                    { label: '已生效', value: '3' },
-                    { label: '已拒绝', value: '5' },
-                    { label: '已取消', value: '6' },
-                    { label: '已到期', value: '7' }
+                    { label: '待支付押金', value: '3' },
+                    { label: '已生效', value: '4' },
+                    { label: '已拒绝', value: '6' },
+                    { label: '已取消', value: '7' },
+                    { label: '已到期', value: '8' }
                 ]" initialActive="null" @change="handleChange" />
             </div>
             <div class="nav-right">
@@ -37,6 +38,7 @@
                         <span @click="showDetail(scope.row.id)">详情</span>
                         <span v-if="scope.row.status === 2" @click="confirmContract(scope.row.id)">确认</span>
                         <span v-if="scope.row.status === 2" @click="rejectContract(scope.row.id)">拒绝</span>
+                        <span v-if="scope.row.status === 3" @click="goPayDeposit()">去支付押金</span>
                     </div>
                 </template>
             </el-table-column>
@@ -96,10 +98,11 @@ export default {
             statusList: [],
             contractStatusConfig: {
                 2: { text: "待租客确认", icon: "el-icon-time", color: "#409EFF", status: "process" },
-                3: { text: "已生效", icon: "el-icon-success", color: "#67C23A", status: "success" },
-                5: { text: "已拒绝", icon: "el-icon-close", color: "#F56C6C", status: "error" },
-                6: { text: "已取消", icon: "el-icon-warning", color: "#909399", status: "error" },
-                7: { text: "已到期", icon: "el-icon-finished", color: "#909399", status: "success" }
+                3: { text: "待支付押金", icon: "el-icon-wallet", color: "#E6A23C", status: "process" },
+                4: { text: "已生效", icon: "el-icon-success", color: "#67C23A", status: "success" },
+                6: { text: "已拒绝", icon: "el-icon-close", color: "#F56C6C", status: "error" },
+                7: { text: "已取消", icon: "el-icon-warning", color: "#909399", status: "error" },
+                8: { text: "已到期", icon: "el-icon-finished", color: "#909399", status: "success" }
             }
         };
     },
@@ -111,10 +114,11 @@ export default {
             return (this.contractStatusConfig[status] && this.contractStatusConfig[status].text) || '未知状态';
         },
         statusType(status) {
-            if (status === 3) return 'success';
+            if (status === 4) return 'success';
+            if (status === 3) return 'warning';
             if (status === 2) return 'warning';
-            if (status === 5) return 'danger';
-            if (status === 6) return 'info';
+            if (status === 6) return 'danger';
+            if (status === 7) return 'info';
             return 'info';
         },
         utilityModeText(type) {
@@ -165,13 +169,13 @@ export default {
         },
         async confirmContract(id) {
             try {
-                await this.$confirm('确定要确认当前租赁合同吗？', '确认租赁合同', {
+                await this.$confirm('确定要确认当前租赁合同吗？确认后将进入押金支付流程。', '确认租赁合同', {
                     confirmButtonText: '确定',
                     cancelButtonText: '取消',
                     type: 'warning'
                 });
                 await this.$axios.put(`/rental-contract/tenantConfirm/${id}`);
-                this.$message.success('合同已确认生效');
+                this.$message.success('合同已确认，请先支付押金');
                 this.fetchFreshData();
             } catch (error) {
                 if (error === 'cancel' || error === 'close') {
@@ -196,6 +200,9 @@ export default {
                 }
                 this.$message.error(error.message || '拒绝失败');
             }
+        },
+        goPayDeposit() {
+            this.$router.push('/my-rental-bill');
         }
     }
 }

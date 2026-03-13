@@ -28,7 +28,9 @@ public interface RentalBillService extends IService<RentalBill> {
 
     Result<String> auditUtilityProof(RentalBill rentalBill);
 
-    void createInitialBills(RentalContract rentalContract);
+    void createDepositBill(RentalContract rentalContract);
+
+    void createFirstRentBill(RentalContract rentalContract);
 
     void cancelPendingBillsByContractId(Integer contractId);
 }

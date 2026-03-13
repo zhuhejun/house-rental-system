@@ -6,11 +6,12 @@
                     { label: '全部', value: 'null' },
                     { label: '待管理员审核', value: '1' },
                     { label: '待租客确认', value: '2' },
-                    { label: '已生效', value: '3' },
-                    { label: '已驳回', value: '4' },
-                    { label: '已拒绝', value: '5' },
-                    { label: '已取消', value: '6' },
-                    { label: '已到期', value: '7' }
+                    { label: '待支付押金', value: '3' },
+                    { label: '已生效', value: '4' },
+                    { label: '已驳回', value: '5' },
+                    { label: '已拒绝', value: '6' },
+                    { label: '已取消', value: '7' },
+                    { label: '已到期', value: '8' }
                 ]" initialActive="null" @change="handleChange" />
             </div>
             <div class="nav-right">
@@ -36,7 +37,7 @@
                         <span @click="showDetail(scope.row.id)">详情</span>
                         <span v-if="scope.row.status === 1" @click="approveContract(scope.row.id)">通过</span>
                         <span v-if="scope.row.status === 1" @click="rejectContract(scope.row.id)">驳回</span>
-                        <span v-if="[2, 3].includes(scope.row.status)" @click="cancelContract(scope.row.id)">取消</span>
+                        <span v-if="[1, 2, 3, 4].includes(scope.row.status)" @click="cancelContract(scope.row.id)">取消</span>
                     </div>
                 </template>
             </el-table-column>
@@ -98,11 +99,12 @@ export default {
             contractStatusConfig: {
                 1: { text: "待管理员审核", icon: "el-icon-s-check", color: "#E6A23C", status: "process" },
                 2: { text: "待租客确认", icon: "el-icon-time", color: "#409EFF", status: "process" },
-                3: { text: "已生效", icon: "el-icon-success", color: "#67C23A", status: "success" },
-                4: { text: "已驳回", icon: "el-icon-close", color: "#F56C6C", status: "error" },
-                5: { text: "已拒绝", icon: "el-icon-close", color: "#F56C6C", status: "error" },
-                6: { text: "已取消", icon: "el-icon-warning", color: "#909399", status: "error" },
-                7: { text: "已到期", icon: "el-icon-finished", color: "#909399", status: "success" }
+                3: { text: "待支付押金", icon: "el-icon-wallet", color: "#E6A23C", status: "process" },
+                4: { text: "已生效", icon: "el-icon-success", color: "#67C23A", status: "success" },
+                5: { text: "已驳回", icon: "el-icon-close", color: "#F56C6C", status: "error" },
+                6: { text: "已拒绝", icon: "el-icon-close", color: "#F56C6C", status: "error" },
+                7: { text: "已取消", icon: "el-icon-warning", color: "#909399", status: "error" },
+                8: { text: "已到期", icon: "el-icon-finished", color: "#909399", status: "success" }
             }
         };
     },
@@ -114,10 +116,11 @@ export default {
             return (this.contractStatusConfig[status] && this.contractStatusConfig[status].text) || '未知状态';
         },
         statusType(status) {
-            if (status === 3) return 'success';
+            if (status === 4) return 'success';
+            if (status === 3) return 'warning';
             if (status === 1 || status === 2) return 'warning';
-            if (status === 4 || status === 5) return 'danger';
-            if (status === 6) return 'info';
+            if (status === 5 || status === 6) return 'danger';
+            if (status === 7) return 'info';
             return 'info';
         },
         utilityModeText(type) {
@@ -186,7 +189,7 @@ export default {
         async approveContract(id) {
             try {
                 await this.$axios.put(`/rental-contract/adminApprove/${id}`);
-                this.$message.success('合同审核通过，已发放给租客');
+                this.$message.success('合同审核通过，已发放给租客确认');
                 this.fetchFreshData();
             } catch (error) {
                 this.$message.error(error.message || '审核失败');

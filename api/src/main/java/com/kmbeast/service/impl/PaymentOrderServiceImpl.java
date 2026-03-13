@@ -3,21 +3,30 @@ package com.kmbeast.service.impl;
 import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kmbeast.context.LocalThreadHolder;
+import com.kmbeast.mapper.HouseMapper;
 import com.kmbeast.mapper.LandlordMapper;
 import com.kmbeast.mapper.PaymentOrderMapper;
 import com.kmbeast.mapper.RentalBillMapper;
+import com.kmbeast.mapper.RentalContractMapper;
+import com.kmbeast.mapper.RentalContractStatusMapper;
 import com.kmbeast.pojo.api.ApiResult;
 import com.kmbeast.pojo.api.Result;
+import com.kmbeast.pojo.em.HouseStatusEnum;
 import com.kmbeast.pojo.em.PaymentOrderStatusEnum;
 import com.kmbeast.pojo.em.RentalBillPayStatusEnum;
 import com.kmbeast.pojo.em.RentalBillTypeEnum;
+import com.kmbeast.pojo.em.RentalContractStatusEnum;
 import com.kmbeast.pojo.em.RoleEnum;
+import com.kmbeast.pojo.entity.House;
 import com.kmbeast.pojo.entity.Landlord;
 import com.kmbeast.pojo.entity.PaymentOrder;
 import com.kmbeast.pojo.entity.RentalBill;
+import com.kmbeast.pojo.entity.RentalContract;
+import com.kmbeast.pojo.entity.RentalContractStatus;
 import com.kmbeast.pojo.vo.PaymentStartVO;
 import com.kmbeast.pojo.vo.RentalBillVO;
 import com.kmbeast.service.PaymentOrderService;
+import com.kmbeast.service.RentalBillService;
 import com.kmbeast.utils.AlipaySupport;
 import com.kmbeast.utils.AssertUtils;
 import org.springframework.stereotype.Service;
@@ -39,6 +48,14 @@ public class PaymentOrderServiceImpl extends ServiceImpl<PaymentOrderMapper, Pay
     private RentalBillMapper rentalBillMapper;
     @Resource
     private LandlordMapper landlordMapper;
+    @Resource
+    private RentalContractMapper rentalContractMapper;
+    @Resource
+    private RentalContractStatusMapper rentalContractStatusMapper;
+    @Resource
+    private HouseMapper houseMapper;
+    @Resource
+    private RentalBillService rentalBillService;
     @Resource
     private AlipaySupport alipaySupport;
 
@@ -152,6 +169,38 @@ public class PaymentOrderServiceImpl extends ServiceImpl<PaymentOrderMapper, Pay
             rentalBill.setUpdateTime(LocalDateTime.now());
             rentalBillMapper.updateById(rentalBill);
         }
+
+        if (Objects.equals(rentalBill.getBillType(), RentalBillTypeEnum.STATUS_1.getType())) {
+            activateContractAfterDeposit(rentalBill, paymentOrder.getTenantUserId());
+        }
+    }
+
+    private void activateContractAfterDeposit(RentalBill rentalBill, Integer operatorId) {
+        RentalContract rentalContract = rentalContractMapper.selectById(rentalBill.getContractId());
+        AssertUtils.notNull(rentalContract, "合同不存在");
+        if (!Objects.equals(rentalContract.getStatus(), RentalContractStatusEnum.STATUS_3.getType())) {
+            return;
+        }
+
+        RentalContractStatus rentalContractStatus = new RentalContractStatus();
+        rentalContractStatus.setOriginStatus(rentalContract.getStatus());
+        rentalContractStatus.setNewId(RentalContractStatusEnum.STATUS_4.getType());
+        rentalContractStatus.setRentalContractId(rentalContract.getId());
+        rentalContractStatus.setOperatorId(operatorId);
+        rentalContractStatus.setNote("押金支付成功，合同正式生效");
+        rentalContractStatus.setCreateTime(LocalDateTime.now());
+        rentalContractStatusMapper.insert(rentalContractStatus);
+
+        rentalContract.setStatus(RentalContractStatusEnum.STATUS_4.getType());
+        rentalContract.setUpdateTime(LocalDateTime.now());
+        rentalContractMapper.updateById(rentalContract);
+
+        House house = houseMapper.selectById(rentalContract.getHouseId());
+        if (house != null) {
+            house.setStatus(HouseStatusEnum.STATUS_3.getType());
+            houseMapper.updateById(house);
+        }
+        rentalBillService.createFirstRentBill(rentalContract);
     }
 
     private RentalBill getBillById(Integer billId) {

@@ -3841,15 +3841,16 @@ CREATE TABLE `rental_contract`  (
   `start_date` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '起租日期',
   `end_date` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '到期日期',
   `monthly_rent` decimal(10, 2) NOT NULL COMMENT '月租金',
+  `deposit_method_id` int(11) NOT NULL DEFAULT 1 COMMENT '押金方式ID',
   `deposit_amount` decimal(10, 2) NOT NULL DEFAULT 0.00 COMMENT '押金',
   `pay_cycle` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '付款方式',
   `utility_payment_mode` int(11) NOT NULL DEFAULT 2 COMMENT '水电费支付方式（1：自行缴费；2：房东结算）',
   `contract_content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL COMMENT '合同内容',
   `attachment_url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL COMMENT '合同附件地址',
-  `status` int(11) NOT NULL COMMENT '合同状态：1待管理员审核 2待租客确认 3已生效 4已驳回 5已拒绝 6已取消 7已到期',
+  `status` int(11) NOT NULL COMMENT '合同状态：1待管理员审核 2待租客确认 3待支付押金 4已生效 5已驳回 6已拒绝 7已取消 8已到期',
   `reject_reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '拒绝原因',
   `cancel_reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '取消原因',
-  `confirm_time` datetime NULL DEFAULT NULL COMMENT '确认生效时间',
+  `confirm_time` datetime NULL DEFAULT NULL COMMENT '租客确认时间',
   `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
@@ -3873,11 +3874,20 @@ CREATE TABLE `rental_contract_status`  (
 -- ----------------------------
 -- Existing rental_contract data migration
 -- 仅当数据库里已经有旧版本合同数据时，按顺序手动执行一次
--- UPDATE `rental_contract` SET `status` = 7 WHERE `status` = 5;
--- UPDATE `rental_contract` SET `status` = 6 WHERE `status` = 4;
--- UPDATE `rental_contract` SET `status` = 5 WHERE `status` = 3;
--- UPDATE `rental_contract` SET `status` = 3 WHERE `status` = 2;
--- UPDATE `rental_contract` SET `status` = 2 WHERE `status` = 1;
+-- ALTER TABLE `rental_contract` ADD COLUMN `deposit_method_id` int(11) NOT NULL DEFAULT 1 COMMENT '押金方式ID' AFTER `monthly_rent`;
+-- UPDATE `rental_contract` SET `deposit_method_id` = 1 WHERE `deposit_method_id` IS NULL;
+-- 若你使用过旧版押金方式枚举（1押一付一 2押一付二 3押一付三 4押二付三 5押十二付三），
+-- 建议按实际业务手动迁移后再上线新版四种主流方式（1押一付一 2押一付三 3押二付一 4押二付三）：
+-- UPDATE `house` SET `deposit_method_id` = 99 WHERE `deposit_method_id` = 2;
+-- UPDATE `house` SET `deposit_method_id` = 2 WHERE `deposit_method_id` = 3;
+-- UPDATE `house` SET `deposit_method_id` = 3 WHERE `deposit_method_id` = 99;
+-- `deposit_method_id` = 5 的历史数据无直接对应项，请按实际合同手动改成 2 或 4 等目标值。
+-- 旧合同表中的 `pay_cycle`、`deposit_amount` 属于历史快照，通常不建议批量重算。
+-- UPDATE `rental_contract` SET `status` = 8 WHERE `status` = 7;
+-- UPDATE `rental_contract` SET `status` = 7 WHERE `status` = 6;
+-- UPDATE `rental_contract` SET `status` = 6 WHERE `status` = 5;
+-- UPDATE `rental_contract` SET `status` = 5 WHERE `status` = 4;
+-- UPDATE `rental_contract` SET `status` = 4 WHERE `status` = 3;
 -- ----------------------------
 
 -- ----------------------------

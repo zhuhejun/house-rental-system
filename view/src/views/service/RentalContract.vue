@@ -6,15 +6,16 @@
                     { label: '全部', value: 'null' },
                     { label: '待管理员审核', value: '1' },
                     { label: '待租客确认', value: '2' },
-                    { label: '已生效', value: '3' },
-                    { label: '已驳回', value: '4' },
-                    { label: '已拒绝', value: '5' },
-                    { label: '已取消', value: '6' },
-                    { label: '已到期', value: '7' }
+                    { label: '待支付押金', value: '3' },
+                    { label: '已生效', value: '4' },
+                    { label: '已驳回', value: '5' },
+                    { label: '已拒绝', value: '6' },
+                    { label: '已取消', value: '7' },
+                    { label: '已到期', value: '8' }
                 ]" initialActive="null" @change="handleChange" />
             </div>
             <div class="nav-right">
-                <div class="primary-bt" @click="dialogVisible = true">
+                <div class="primary-bt" @click="openCreateDialog">
                     <i class="el-icon-plus"></i>
                     发起合同
                 </div>
@@ -43,7 +44,7 @@
                 <template #default="scope">
                     <div class="table-actions">
                         <span @click="showDetail(scope.row.id)">详情</span>
-                        <span v-if="[1, 2, 3].includes(scope.row.status)" @click="cancelContract(scope.row)">取消</span>
+                        <span v-if="[1, 2, 3, 4].includes(scope.row.status)" @click="cancelContract(scope.row)">取消</span>
                     </div>
                 </template>
             </el-table-column>
@@ -84,13 +85,16 @@
                             style="width: 100%;"></el-input-number>
                     </div>
                     <div>
-                        <p>*押金</p>
-                        <el-input-number v-model="form.depositAmount" :min="0" :precision="2" :step="100"
-                            style="width: 100%;"></el-input-number>
+                        <p>*押金方式</p>
+                        <Tab :key="depositMethodTabKey" :buttons="depositMethodOptions"
+                            :initialActive="form.depositMethodId" @change="handleDepositMethodChange" />
                     </div>
                 </div>
-                <p>*付款方式</p>
-                <el-input v-model="form.payCycle" placeholder="例如：押一付三"></el-input>
+                <div class="calc-card">
+                    <div><strong>固定押金方式：</strong>{{ depositMethodText(form.depositMethodId) }}</div>
+                    <div><strong>系统计算押金：</strong>{{ calculateDepositAmount() }}</div>
+                    <div><strong>付款方式快照：</strong>{{ depositMethodText(form.depositMethodId) }}</div>
+                </div>
                 <p>*水电费支付方式</p>
                 <el-select v-model="form.utilityPaymentMode" style="width: 100%;" placeholder="请选择">
                     <el-option label="自行缴费" :value="1"></el-option>
@@ -164,18 +168,22 @@ export default {
             orderOptions: [],
             detail: {},
             statusList: [],
+            depositMethodOptions: [],
+            depositMethodTabKey: 0,
             contractStatusConfig: {
                 1: { text: "待管理员审核", icon: "el-icon-s-check", color: "#E6A23C", status: "process" },
                 2: { text: "待租客确认", icon: "el-icon-time", color: "#409EFF", status: "process" },
-                3: { text: "已生效", icon: "el-icon-success", color: "#67C23A", status: "success" },
-                4: { text: "已驳回", icon: "el-icon-close", color: "#F56C6C", status: "error" },
-                5: { text: "已拒绝", icon: "el-icon-close", color: "#F56C6C", status: "error" },
-                6: { text: "已取消", icon: "el-icon-warning", color: "#909399", status: "error" },
-                7: { text: "已到期", icon: "el-icon-finished", color: "#909399", status: "success" }
+                3: { text: "待支付押金", icon: "el-icon-wallet", color: "#E6A23C", status: "process" },
+                4: { text: "已生效", icon: "el-icon-success", color: "#67C23A", status: "success" },
+                5: { text: "已驳回", icon: "el-icon-close", color: "#F56C6C", status: "error" },
+                6: { text: "已拒绝", icon: "el-icon-close", color: "#F56C6C", status: "error" },
+                7: { text: "已取消", icon: "el-icon-warning", color: "#909399", status: "error" },
+                8: { text: "已到期", icon: "el-icon-finished", color: "#909399", status: "success" }
             }
         };
     },
     created() {
+        this.fetchDepositMethods();
         this.refresh();
     },
     methods: {
@@ -186,8 +194,7 @@ export default {
                 startDate: '',
                 endDate: '',
                 monthlyRent: 1000,
-                depositAmount: 0,
-                payCycle: '',
+                depositMethodId: 1,
                 utilityPaymentMode: 2,
                 contractContent: '',
                 attachmentUrl: '',
@@ -200,17 +207,39 @@ export default {
             return (this.contractStatusConfig[status] && this.contractStatusConfig[status].text) || '未知状态';
         },
         statusType(status) {
-            if (status === 3) return 'success';
+            if (status === 4) return 'success';
+            if (status === 3) return 'warning';
             if (status === 1 || status === 2) return 'warning';
-            if (status === 4 || status === 5) return 'danger';
-            if (status === 6) return 'info';
+            if (status === 5 || status === 6) return 'danger';
+            if (status === 7) return 'info';
             return 'info';
+        },
+        depositMethodText(type) {
+            const target = this.depositMethodOptions.find(item => Number(item.value) === Number(type));
+            return target ? target.label : '未选择';
+        },
+        getDepositMonths(type) {
+            const map = { 1: 1, 2: 1, 3: 2, 4: 2 };
+            return map[type] || 0;
+        },
+        calculateDepositAmount() {
+            const monthlyRent = Number(this.form.monthlyRent || 0);
+            const depositMonths = this.getDepositMonths(this.form.depositMethodId);
+            return (monthlyRent * depositMonths).toFixed(2);
         },
         async refresh() {
             await Promise.all([
                 this.fetchFreshData(),
                 this.fetchAvailableOrders()
             ]);
+        },
+        async fetchDepositMethods() {
+            try {
+                const { data } = await this.$axios.get('/house/houseDepositMethodList');
+                this.depositMethodOptions = data || [];
+            } catch (error) {
+                console.error('加载押金方式失败:', error);
+            }
         },
         async fetchFreshData() {
             try {
@@ -271,12 +300,21 @@ export default {
             const targetUrl = url.startsWith('http') ? url : `${backendOrigin}${url}`;
             window.open(targetUrl, '_blank');
         },
+        openCreateDialog() {
+            this.form = this.getDefaultForm();
+            this.depositMethodTabKey += 1;
+            this.dialogVisible = true;
+        },
+        handleDepositMethodChange(obj) {
+            this.form.depositMethodId = Number(obj.value);
+        },
         async saveContract() {
             try {
                 await this.$axios.post('/rental-contract/save', this.form);
                 this.$message.success('合同发起成功');
                 this.dialogVisible = false;
                 this.form = this.getDefaultForm();
+                this.depositMethodTabKey += 1;
                 this.refresh();
             } catch (error) {
                 this.$message.error(error.message || '发起失败');
@@ -362,6 +400,16 @@ export default {
     margin-bottom: 8px;
     color: #909399;
     font-size: 12px;
+}
+
+.calc-card {
+    margin: 12px 0;
+    padding: 12px 14px;
+    border-radius: 6px;
+    background: #f5f7fa;
+    color: #606266;
+    display: grid;
+    gap: 6px;
 }
 
 .detail-block {

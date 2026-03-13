@@ -13,6 +13,7 @@
                rc.start_date,
                rc.end_date,
                rc.monthly_rent,
+               rc.deposit_method_id,
                rc.deposit_amount,
                rc.pay_cycle,
                rc.utility_payment_mode,
@@ -58,7 +59,7 @@
                 AND rc.status = #{status}
             </if>
             <if test="tenantVisible != null and tenantVisible">
-                AND rc.status NOT IN (1, 4)
+                AND rc.status NOT IN (1, 5)
             </if>
         </where>
         ORDER BY rc.id DESC
@@ -97,7 +98,7 @@
                 AND rc.status = #{status}
             </if>
             <if test="tenantVisible != null and tenantVisible">
-                AND rc.status NOT IN (1, 4)
+                AND rc.status NOT IN (1, 5)
             </if>
         </where>
     </select>
@@ -113,6 +114,7 @@
                rc.start_date,
                rc.end_date,
                rc.monthly_rent,
+               rc.deposit_method_id,
                rc.deposit_amount,
                rc.pay_cycle,
                rc.utility_payment_mode,
@@ -140,7 +142,7 @@
         SELECT COUNT(*)
         FROM rental_contract
         WHERE house_id = #{houseId}
-          AND status IN (1, 2, 3)
+          AND status IN (1, 2, 3, 4)
         <if test="excludeId != null">
             AND id != #{excludeId}
         </if>
@@ -163,6 +165,7 @@
         <result column="start_date" property="startDate"/>
         <result column="end_date" property="endDate"/>
         <result column="monthly_rent" property="monthlyRent"/>
+        <result column="deposit_method_id" property="depositMethodId"/>
         <result column="deposit_amount" property="depositAmount"/>
         <result column="pay_cycle" property="payCycle"/>
         <result column="utility_payment_mode" property="utilityPaymentMode"/>

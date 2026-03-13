@@ -11,6 +11,7 @@ import com.kmbeast.pojo.api.ApiResult;
 import com.kmbeast.pojo.api.Result;
 import com.kmbeast.pojo.dto.LandlordQueryDto;
 import com.kmbeast.pojo.dto.RentalContractQueryDto;
+import com.kmbeast.pojo.em.HouseDepositEnum;
 import com.kmbeast.pojo.em.HouseOrderStatusEnum;
 import com.kmbeast.pojo.em.HouseStatusEnum;
 import com.kmbeast.pojo.em.RentalContractStatusEnum;
@@ -67,6 +68,7 @@ public class RentalContractServiceImpl extends ServiceImpl<RentalContractMapper,
         rentalContract.setTenantUserId(orderInfo.getUserId());
         rentalContract.setLandlordId(house.getLandlordId());
         rentalContract.setContractNo(generateContractNo());
+        applyDepositMethod(rentalContract);
         rentalContract.setStatus(RentalContractStatusEnum.STATUS_1.getType());
         rentalContract.setCreateTime(LocalDateTime.now());
         rentalContract.setUpdateTime(LocalDateTime.now());
@@ -123,7 +125,7 @@ public class RentalContractServiceImpl extends ServiceImpl<RentalContractMapper,
         RentalContract dbContract = getEntityById(rentalContract.getId());
         AssertUtils.equals(dbContract.getStatus(), RentalContractStatusEnum.STATUS_1.getType(), "当前状态无法驳回");
         dbContract.setRejectReason(rentalContract.getRejectReason());
-        updateStatus(dbContract, RentalContractStatusEnum.STATUS_4.getType(), rentalContract.getRejectReason());
+        updateStatus(dbContract, RentalContractStatusEnum.STATUS_5.getType(), rentalContract.getRejectReason());
         dbContract.setUpdateTime(LocalDateTime.now());
         updateById(dbContract);
         return ApiResult.success("合同已驳回");
@@ -137,20 +139,13 @@ public class RentalContractServiceImpl extends ServiceImpl<RentalContractMapper,
         AssertUtils.equals(rentalContract.getTenantUserId(), LocalThreadHolder.getUserId(), "非法操作");
         AssertUtils.equals(rentalContract.getStatus(), RentalContractStatusEnum.STATUS_2.getType(), "当前状态无法确认");
         Integer activeCount = this.baseMapper.countActiveContractByHouseId(rentalContract.getHouseId(), rentalContract.getId());
-        AssertUtils.isFalse(activeCount != null && activeCount > 0, "该房源已有其他生效中的合同");
-
+        AssertUtils.isFalse(activeCount != null && activeCount > 0, "该房源已有其他进行中的合同");
         updateStatus(rentalContract, RentalContractStatusEnum.STATUS_3.getType(), null);
         rentalContract.setConfirmTime(LocalDateTime.now());
         rentalContract.setUpdateTime(LocalDateTime.now());
         updateById(rentalContract);
-
-        House house = houseMapper.selectById(rentalContract.getHouseId());
-        if (house != null) {
-            house.setStatus(HouseStatusEnum.STATUS_3.getType());
-            houseMapper.updateById(house);
-        }
-        rentalBillService.createInitialBills(rentalContract);
-        return ApiResult.success("合同已确认生效");
+        rentalBillService.createDepositBill(rentalContract);
+        return ApiResult.success("合同已确认，请先完成押金支付");
     }
 
     @Override
@@ -161,7 +156,7 @@ public class RentalContractServiceImpl extends ServiceImpl<RentalContractMapper,
         AssertUtils.equals(dbContract.getTenantUserId(), LocalThreadHolder.getUserId(), "非法操作");
         AssertUtils.equals(dbContract.getStatus(), RentalContractStatusEnum.STATUS_2.getType(), "当前状态无法拒绝");
         dbContract.setRejectReason(rentalContract.getRejectReason());
-        updateStatus(dbContract, RentalContractStatusEnum.STATUS_5.getType(), rentalContract.getRejectReason());
+        updateStatus(dbContract, RentalContractStatusEnum.STATUS_6.getType(), rentalContract.getRejectReason());
         dbContract.setUpdateTime(LocalDateTime.now());
         updateById(dbContract);
         return ApiResult.success("合同已拒绝");
@@ -177,20 +172,20 @@ public class RentalContractServiceImpl extends ServiceImpl<RentalContractMapper,
         boolean isLandlord = Objects.equals(LocalThreadHolder.getUserId(), getLandlordUserId(dbContract.getLandlordId()));
         boolean isTenant = Objects.equals(LocalThreadHolder.getUserId(), dbContract.getTenantUserId());
         AssertUtils.isTrue(isAdmin || isLandlord || isTenant, "非法操作");
-        AssertUtils.isFalse(Objects.equals(dbContract.getStatus(), RentalContractStatusEnum.STATUS_4.getType())
-                        || Objects.equals(dbContract.getStatus(), RentalContractStatusEnum.STATUS_5.getType()),
+        AssertUtils.isFalse(Objects.equals(dbContract.getStatus(), RentalContractStatusEnum.STATUS_5.getType())
+                        || Objects.equals(dbContract.getStatus(), RentalContractStatusEnum.STATUS_6.getType()),
                 "当前状态无法取消");
-        AssertUtils.isFalse(Objects.equals(dbContract.getStatus(), RentalContractStatusEnum.STATUS_6.getType())
-                        || Objects.equals(dbContract.getStatus(), RentalContractStatusEnum.STATUS_7.getType()),
+        AssertUtils.isFalse(Objects.equals(dbContract.getStatus(), RentalContractStatusEnum.STATUS_7.getType())
+                        || Objects.equals(dbContract.getStatus(), RentalContractStatusEnum.STATUS_8.getType()),
                 "当前状态无法取消");
 
         dbContract.setCancelReason(rentalContract.getCancelReason());
         Integer beforeStatus = dbContract.getStatus();
-        updateStatus(dbContract, RentalContractStatusEnum.STATUS_6.getType(), rentalContract.getCancelReason());
+        updateStatus(dbContract, RentalContractStatusEnum.STATUS_7.getType(), rentalContract.getCancelReason());
         dbContract.setUpdateTime(LocalDateTime.now());
         updateById(dbContract);
         rentalBillService.cancelPendingBillsByContractId(dbContract.getId());
-        if (Objects.equals(beforeStatus, RentalContractStatusEnum.STATUS_3.getType())) {
+        if (Objects.equals(beforeStatus, RentalContractStatusEnum.STATUS_4.getType())) {
             recoverHouseStatusIfNeeded(dbContract.getHouseId());
         }
         return ApiResult.success("合同已取消");
@@ -209,8 +204,7 @@ public class RentalContractServiceImpl extends ServiceImpl<RentalContractMapper,
         AssertUtils.hasText(rentalContract.getStartDate(), "起租日期不能为空");
         AssertUtils.hasText(rentalContract.getEndDate(), "到期日期不能为空");
         AssertUtils.notNull(rentalContract.getMonthlyRent(), "月租金不能为空");
-        AssertUtils.notNull(rentalContract.getDepositAmount(), "押金不能为空");
-        AssertUtils.hasText(rentalContract.getPayCycle(), "付款方式不能为空");
+        AssertUtils.notNull(rentalContract.getDepositMethodId(), "押金方式不能为空");
         if (rentalContract.getUtilityPaymentMode() == null) {
             rentalContract.setUtilityPaymentMode(UtilityPaymentModeEnum.STATUS_2.getType());
         }
@@ -218,7 +212,7 @@ public class RentalContractServiceImpl extends ServiceImpl<RentalContractMapper,
                         || Objects.equals(rentalContract.getUtilityPaymentMode(), UtilityPaymentModeEnum.STATUS_2.getType()),
                 "水电费支付方式非法");
         AssertUtils.isTrue(rentalContract.getMonthlyRent().compareTo(BigDecimal.ZERO) > 0, "月租金必须大于0");
-        AssertUtils.isTrue(rentalContract.getDepositAmount().compareTo(BigDecimal.ZERO) >= 0, "押金不能小于0");
+        AssertUtils.isTrue(HouseDepositEnum.getDepositMonths(rentalContract.getDepositMethodId()) > 0, "押金方式非法");
 
         HouseOrderInfo orderInfo = houseOrderInfoMapper.selectById(rentalContract.getHouseOrderInfoId());
         AssertUtils.notNull(orderInfo, "预约记录不存在");
@@ -228,7 +222,7 @@ public class RentalContractServiceImpl extends ServiceImpl<RentalContractMapper,
         AssertUtils.isFalse(contractCount != null && contractCount > 0, "该预约已创建过合同");
 
         Integer activeCount = this.baseMapper.countActiveContractByHouseId(orderInfo.getHouseId(), null);
-        AssertUtils.isFalse(activeCount != null && activeCount > 0, "该房源已有待确认或生效中的合同");
+        AssertUtils.isFalse(activeCount != null && activeCount > 0, "该房源已有待审核、待确认、待支付押金或生效中的合同");
     }
 
     private LandlordVO getLandlord() {
@@ -282,5 +276,12 @@ public class RentalContractServiceImpl extends ServiceImpl<RentalContractMapper,
     private String generateContractNo() {
         int random = new Random().nextInt(9000) + 1000;
         return "RC" + System.currentTimeMillis() + random;
+    }
+
+    private void applyDepositMethod(RentalContract rentalContract) {
+        Integer depositMonths = HouseDepositEnum.getDepositMonths(rentalContract.getDepositMethodId());
+        AssertUtils.isTrue(depositMonths > 0, "押金方式非法");
+        rentalContract.setPayCycle(HouseDepositEnum.getDetail(rentalContract.getDepositMethodId()));
+        rentalContract.setDepositAmount(rentalContract.getMonthlyRent().multiply(BigDecimal.valueOf(depositMonths)));
     }
 }

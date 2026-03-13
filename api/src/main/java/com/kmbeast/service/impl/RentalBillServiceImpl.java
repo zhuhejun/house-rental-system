@@ -9,6 +9,7 @@ import com.kmbeast.pojo.api.ApiResult;
 import com.kmbeast.pojo.api.Result;
 import com.kmbeast.pojo.dto.LandlordQueryDto;
 import com.kmbeast.pojo.dto.RentalBillQueryDto;
+import com.kmbeast.pojo.em.HouseDepositEnum;
 import com.kmbeast.pojo.em.RentalBillPayStatusEnum;
 import com.kmbeast.pojo.em.RentalBillTypeEnum;
 import com.kmbeast.pojo.em.RoleEnum;
@@ -27,7 +28,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
@@ -37,6 +41,8 @@ import java.util.Random;
  */
 @Service
 public class RentalBillServiceImpl extends ServiceImpl<RentalBillMapper, RentalBill> implements RentalBillService {
+
+    private static final DateTimeFormatter YEAR_MONTH_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM");
 
     @Resource
     private RentalContractMapper rentalContractMapper;
@@ -56,7 +62,9 @@ public class RentalBillServiceImpl extends ServiceImpl<RentalBillMapper, RentalB
         rentalBill.setLandlordId(rentalContract.getLandlordId());
         rentalBill.setTenantUserId(rentalContract.getTenantUserId());
         rentalBill.setBillType(RentalBillTypeEnum.STATUS_2.getType());
-        rentalBill.setRentAmount(defaultAmount(rentalBill.getRentAmount(), rentalContract.getMonthlyRent()));
+        Integer payMonths = getPayMonths(rentalContract);
+        rentalBill.setBillMonth(buildBillPeriod(rentalBill.getBillMonth(), payMonths));
+        rentalBill.setRentAmount(defaultAmount(rentalBill.getRentAmount(), calculatePeriodRent(rentalContract, payMonths)));
         rentalBill.setDepositAmount(BigDecimal.ZERO);
         rentalBill.setWaterAmount(defaultAmount(rentalBill.getWaterAmount(), BigDecimal.ZERO));
         rentalBill.setElectricAmount(defaultAmount(rentalBill.getElectricAmount(), BigDecimal.ZERO));
@@ -145,7 +153,7 @@ public class RentalBillServiceImpl extends ServiceImpl<RentalBillMapper, RentalB
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void createInitialBills(RentalContract rentalContract) {
+    public void createDepositBill(RentalContract rentalContract) {
         if (rentalContract == null) {
             return;
         }
@@ -166,16 +174,25 @@ public class RentalBillServiceImpl extends ServiceImpl<RentalBillMapper, RentalB
             depositBill.setElectricAmount(BigDecimal.ZERO);
             depositBill.setTotalAmount(rentalContract.getDepositAmount());
             depositBill.setDueDate(rentalContract.getStartDate());
-            depositBill.setRemark("合同生效后自动生成的押金账单");
+            depositBill.setRemark("租客确认合同后自动生成的押金账单");
             depositBill.setUtilityProofStatus(UtilityProofStatusEnum.STATUS_5.getType());
             depositBill.setPayStatus(RentalBillPayStatusEnum.STATUS_1.getType());
             depositBill.setCreateTime(LocalDateTime.now());
             depositBill.setUpdateTime(LocalDateTime.now());
             save(depositBill);
         }
+    }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void createFirstRentBill(RentalContract rentalContract) {
+        if (rentalContract == null) {
+            return;
+        }
+        Integer payMonths = getPayMonths(rentalContract);
         String firstMonth = getBillMonth(rentalContract.getStartDate());
-        if (!existsBill(rentalContract.getId(), RentalBillTypeEnum.STATUS_2.getType(), firstMonth)) {
+        String firstBillPeriod = buildBillPeriod(firstMonth, payMonths);
+        if (!existsBill(rentalContract.getId(), RentalBillTypeEnum.STATUS_2.getType(), firstBillPeriod)) {
             RentalBill rentBill = new RentalBill();
             rentBill.setBillNo(generateBillNo());
             rentBill.setContractId(rentalContract.getId());
@@ -183,15 +200,15 @@ public class RentalBillServiceImpl extends ServiceImpl<RentalBillMapper, RentalB
             rentBill.setLandlordId(rentalContract.getLandlordId());
             rentBill.setTenantUserId(rentalContract.getTenantUserId());
             rentBill.setBillType(RentalBillTypeEnum.STATUS_2.getType());
-            rentBill.setBillMonth(firstMonth);
+            rentBill.setBillMonth(firstBillPeriod);
             rentBill.setUtilityPaymentMode(rentalContract.getUtilityPaymentMode());
-            rentBill.setRentAmount(rentalContract.getMonthlyRent());
+            rentBill.setRentAmount(calculatePeriodRent(rentalContract, payMonths));
             rentBill.setDepositAmount(BigDecimal.ZERO);
             rentBill.setWaterAmount(BigDecimal.ZERO);
             rentBill.setElectricAmount(BigDecimal.ZERO);
-            rentBill.setTotalAmount(rentalContract.getMonthlyRent());
+            rentBill.setTotalAmount(rentBill.getRentAmount());
             rentBill.setDueDate(rentalContract.getStartDate());
-            rentBill.setRemark("合同生效后自动生成的首期租金账单");
+            rentBill.setRemark("押金支付成功后自动生成的首期租金账单（" + rentalContract.getPayCycle() + "）");
             rentBill.setUtilityProofStatus(resolveProofStatus(rentalContract.getUtilityPaymentMode()));
             rentBill.setPayStatus(RentalBillPayStatusEnum.STATUS_1.getType());
             rentBill.setCreateTime(LocalDateTime.now());
@@ -221,17 +238,21 @@ public class RentalBillServiceImpl extends ServiceImpl<RentalBillMapper, RentalB
         AssertUtils.hasText(rentalBill.getDueDate(), "到期日期不能为空");
         RentalContract rentalContract = rentalContractMapper.selectById(rentalBill.getContractId());
         AssertUtils.notNull(rentalContract, "合同不存在");
-        AssertUtils.equals(rentalContract.getStatus(), RentalContractStatusEnum.STATUS_3.getType(), "仅已生效合同可创建账单");
+        AssertUtils.equals(rentalContract.getStatus(), RentalContractStatusEnum.STATUS_4.getType(), "仅已生效合同可创建账单");
+        Integer payMonths = getPayMonths(rentalContract);
+        AssertUtils.isTrue(payMonths > 0, "合同付款周期异常");
+        validateBillPeriod(rentalBill.getBillMonth(), rentalContract, payMonths);
+        String billPeriod = buildBillPeriod(rentalBill.getBillMonth(), payMonths);
         if (rentalBill.getUtilityPaymentMode() == null) {
             rentalBill.setUtilityPaymentMode(rentalContract.getUtilityPaymentMode());
         }
         AssertUtils.isTrue(Objects.equals(rentalBill.getUtilityPaymentMode(), UtilityPaymentModeEnum.STATUS_1.getType())
                         || Objects.equals(rentalBill.getUtilityPaymentMode(), UtilityPaymentModeEnum.STATUS_2.getType()),
                 "水电费支付方式非法");
-        BigDecimal rentAmount = defaultAmount(rentalBill.getRentAmount(), rentalContract.getMonthlyRent());
+        BigDecimal rentAmount = defaultAmount(rentalBill.getRentAmount(), calculatePeriodRent(rentalContract, payMonths));
         AssertUtils.isTrue(rentAmount.compareTo(BigDecimal.ZERO) > 0, "租金必须大于0");
-        AssertUtils.isFalse(existsBill(rentalBill.getContractId(), RentalBillTypeEnum.STATUS_2.getType(), rentalBill.getBillMonth()),
-                "该月份已存在租金账单");
+        AssertUtils.isFalse(existsBill(rentalBill.getContractId(), RentalBillTypeEnum.STATUS_2.getType(), billPeriod),
+                "该账期已存在租金账单");
         AssertUtils.notNegative(defaultAmount(rentalBill.getWaterAmount(), BigDecimal.ZERO), "水费不能小于0");
         AssertUtils.notNegative(defaultAmount(rentalBill.getElectricAmount(), BigDecimal.ZERO), "电费不能小于0");
     }
@@ -280,6 +301,62 @@ public class RentalBillServiceImpl extends ServiceImpl<RentalBillMapper, RentalB
             return null;
         }
         return date.substring(0, 7);
+    }
+
+    private Integer getPayMonths(RentalContract rentalContract) {
+        if (rentalContract == null) {
+            return 0;
+        }
+        return HouseDepositEnum.getPayMonths(rentalContract.getDepositMethodId());
+    }
+
+    private BigDecimal calculatePeriodRent(RentalContract rentalContract, Integer payMonths) {
+        BigDecimal monthlyRent = rentalContract == null ? null : rentalContract.getMonthlyRent();
+        if (monthlyRent == null || payMonths == null || payMonths <= 0) {
+            return BigDecimal.ZERO;
+        }
+        return monthlyRent.multiply(BigDecimal.valueOf(payMonths));
+    }
+
+    private void validateBillPeriod(String billStartMonth, RentalContract rentalContract, Integer payMonths) {
+        AssertUtils.hasText(billStartMonth, "账期开始月份不能为空");
+        AssertUtils.isTrue(isYearMonth(billStartMonth), "账期开始月份格式非法");
+        String contractStartMonth = getBillMonth(rentalContract.getStartDate());
+        String contractEndMonth = getBillMonth(rentalContract.getEndDate());
+        AssertUtils.isTrue(isYearMonth(contractStartMonth) && isYearMonth(contractEndMonth), "合同账期异常");
+
+        YearMonth startMonth = YearMonth.parse(billStartMonth, YEAR_MONTH_FORMATTER);
+        YearMonth contractStart = YearMonth.parse(contractStartMonth, YEAR_MONTH_FORMATTER);
+        YearMonth contractEnd = YearMonth.parse(contractEndMonth, YEAR_MONTH_FORMATTER);
+        long monthDiff = ChronoUnit.MONTHS.between(contractStart, startMonth);
+        AssertUtils.isTrue(monthDiff >= 0, "账期不能早于合同起租月份");
+        AssertUtils.isTrue(monthDiff % payMonths == 0, "账期开始月份不符合当前付款周期");
+        YearMonth periodEnd = startMonth.plusMonths(payMonths - 1L);
+        AssertUtils.isTrue(!periodEnd.isAfter(contractEnd), "账期超出了合同结束月份");
+    }
+
+    private String buildBillPeriod(String billStartMonth, Integer payMonths) {
+        if (!isYearMonth(billStartMonth)) {
+            return billStartMonth;
+        }
+        YearMonth startMonth = YearMonth.parse(billStartMonth, YEAR_MONTH_FORMATTER);
+        if (payMonths == null || payMonths <= 1) {
+            return startMonth.format(YEAR_MONTH_FORMATTER);
+        }
+        YearMonth endMonth = startMonth.plusMonths(payMonths - 1L);
+        return startMonth.format(YEAR_MONTH_FORMATTER) + "至" + endMonth.format(YEAR_MONTH_FORMATTER);
+    }
+
+    private boolean isYearMonth(String value) {
+        if (value == null || value.length() != 7) {
+            return false;
+        }
+        try {
+            YearMonth.parse(value, YEAR_MONTH_FORMATTER);
+            return true;
+        } catch (Exception exception) {
+            return false;
+        }
     }
 
     private LandlordVO getLandlord() {

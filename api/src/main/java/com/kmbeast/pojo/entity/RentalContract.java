@@ -41,6 +41,8 @@ public class RentalContract {
 
     private BigDecimal monthlyRent;
 
+    private Integer depositMethodId;
+
     private BigDecimal depositAmount;
 
     private String payCycle;
