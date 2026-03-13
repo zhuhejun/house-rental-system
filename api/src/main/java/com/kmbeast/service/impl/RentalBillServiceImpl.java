@@ -221,7 +221,7 @@ public class RentalBillServiceImpl extends ServiceImpl<RentalBillMapper, RentalB
         AssertUtils.hasText(rentalBill.getDueDate(), "到期日期不能为空");
         RentalContract rentalContract = rentalContractMapper.selectById(rentalBill.getContractId());
         AssertUtils.notNull(rentalContract, "合同不存在");
-        AssertUtils.equals(rentalContract.getStatus(), RentalContractStatusEnum.STATUS_2.getType(), "仅已生效合同可创建账单");
+        AssertUtils.equals(rentalContract.getStatus(), RentalContractStatusEnum.STATUS_3.getType(), "仅已生效合同可创建账单");
         if (rentalBill.getUtilityPaymentMode() == null) {
             rentalBill.setUtilityPaymentMode(rentalContract.getUtilityPaymentMode());
         }

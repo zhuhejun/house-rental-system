@@ -3846,7 +3846,7 @@ CREATE TABLE `rental_contract`  (
   `utility_payment_mode` int(11) NOT NULL DEFAULT 2 COMMENT '水电费支付方式（1：自行缴费；2：房东结算）',
   `contract_content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL COMMENT '合同内容',
   `attachment_url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL COMMENT '合同附件地址',
-  `status` int(11) NOT NULL COMMENT '合同状态：1待租客确认 2已生效 3已拒绝 4已取消 5已到期',
+  `status` int(11) NOT NULL COMMENT '合同状态：1待管理员审核 2待租客确认 3已生效 4已驳回 5已拒绝 6已取消 7已到期',
   `reject_reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '拒绝原因',
   `cancel_reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '取消原因',
   `confirm_time` datetime NULL DEFAULT NULL COMMENT '确认生效时间',
@@ -3869,6 +3869,16 @@ CREATE TABLE `rental_contract_status`  (
   `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin COMMENT = '租赁合同状态流转表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Existing rental_contract data migration
+-- 仅当数据库里已经有旧版本合同数据时，按顺序手动执行一次
+-- UPDATE `rental_contract` SET `status` = 7 WHERE `status` = 5;
+-- UPDATE `rental_contract` SET `status` = 6 WHERE `status` = 4;
+-- UPDATE `rental_contract` SET `status` = 5 WHERE `status` = 3;
+-- UPDATE `rental_contract` SET `status` = 3 WHERE `status` = 2;
+-- UPDATE `rental_contract` SET `status` = 2 WHERE `status` = 1;
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for rental_bill

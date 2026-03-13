@@ -71,7 +71,7 @@ public class RentalContractServiceImpl extends ServiceImpl<RentalContractMapper,
         rentalContract.setCreateTime(LocalDateTime.now());
         rentalContract.setUpdateTime(LocalDateTime.now());
         save(rentalContract);
-        return ApiResult.success("租赁合同发起成功，等待租客确认");
+        return ApiResult.success("租赁合同发起成功，等待管理员审核");
     }
 
     @Override
@@ -84,6 +84,7 @@ public class RentalContractServiceImpl extends ServiceImpl<RentalContractMapper,
     @Override
     public Result<List<RentalContractVO>> listUser(RentalContractQueryDto queryDto) {
         queryDto.setTenantUserId(LocalThreadHolder.getUserId());
+        queryDto.setTenantVisible(true);
         return list(queryDto);
     }
 
@@ -102,17 +103,43 @@ public class RentalContractServiceImpl extends ServiceImpl<RentalContractMapper,
         return ApiResult.success(rentalContractVO);
     }
 
+    @Override
+    public Result<String> adminApprove(Integer id) {
+        AssertUtils.notNull(id, "合同ID不能为空");
+        AssertUtils.equals(LocalThreadHolder.getRoleId(), RoleEnum.ADMIN.getRole(), "非法操作");
+        RentalContract rentalContract = getEntityById(id);
+        AssertUtils.equals(rentalContract.getStatus(), RentalContractStatusEnum.STATUS_1.getType(), "当前状态无法审核通过");
+        updateStatus(rentalContract, RentalContractStatusEnum.STATUS_2.getType(), "管理员审核通过");
+        rentalContract.setUpdateTime(LocalDateTime.now());
+        updateById(rentalContract);
+        return ApiResult.success("合同审核通过，已发放给租客确认");
+    }
+
+    @Override
+    public Result<String> adminReject(RentalContract rentalContract) {
+        AssertUtils.notNull(rentalContract, "合同数据不能为空");
+        AssertUtils.notNull(rentalContract.getId(), "合同ID不能为空");
+        AssertUtils.equals(LocalThreadHolder.getRoleId(), RoleEnum.ADMIN.getRole(), "非法操作");
+        RentalContract dbContract = getEntityById(rentalContract.getId());
+        AssertUtils.equals(dbContract.getStatus(), RentalContractStatusEnum.STATUS_1.getType(), "当前状态无法驳回");
+        dbContract.setRejectReason(rentalContract.getRejectReason());
+        updateStatus(dbContract, RentalContractStatusEnum.STATUS_4.getType(), rentalContract.getRejectReason());
+        dbContract.setUpdateTime(LocalDateTime.now());
+        updateById(dbContract);
+        return ApiResult.success("合同已驳回");
+    }
+
     @Transactional(rollbackFor = Exception.class)
     @Override
     public Result<String> tenantConfirm(Integer id) {
         AssertUtils.notNull(id, "合同ID不能为空");
         RentalContract rentalContract = getEntityById(id);
         AssertUtils.equals(rentalContract.getTenantUserId(), LocalThreadHolder.getUserId(), "非法操作");
-        AssertUtils.equals(rentalContract.getStatus(), RentalContractStatusEnum.STATUS_1.getType(), "当前状态无法确认");
+        AssertUtils.equals(rentalContract.getStatus(), RentalContractStatusEnum.STATUS_2.getType(), "当前状态无法确认");
         Integer activeCount = this.baseMapper.countActiveContractByHouseId(rentalContract.getHouseId(), rentalContract.getId());
         AssertUtils.isFalse(activeCount != null && activeCount > 0, "该房源已有其他生效中的合同");
 
-        updateStatus(rentalContract, RentalContractStatusEnum.STATUS_2.getType(), null);
+        updateStatus(rentalContract, RentalContractStatusEnum.STATUS_3.getType(), null);
         rentalContract.setConfirmTime(LocalDateTime.now());
         rentalContract.setUpdateTime(LocalDateTime.now());
         updateById(rentalContract);
@@ -132,9 +159,9 @@ public class RentalContractServiceImpl extends ServiceImpl<RentalContractMapper,
         AssertUtils.notNull(rentalContract.getId(), "合同ID不能为空");
         RentalContract dbContract = getEntityById(rentalContract.getId());
         AssertUtils.equals(dbContract.getTenantUserId(), LocalThreadHolder.getUserId(), "非法操作");
-        AssertUtils.equals(dbContract.getStatus(), RentalContractStatusEnum.STATUS_1.getType(), "当前状态无法拒绝");
+        AssertUtils.equals(dbContract.getStatus(), RentalContractStatusEnum.STATUS_2.getType(), "当前状态无法拒绝");
         dbContract.setRejectReason(rentalContract.getRejectReason());
-        updateStatus(dbContract, RentalContractStatusEnum.STATUS_3.getType(), rentalContract.getRejectReason());
+        updateStatus(dbContract, RentalContractStatusEnum.STATUS_5.getType(), rentalContract.getRejectReason());
         dbContract.setUpdateTime(LocalDateTime.now());
         updateById(dbContract);
         return ApiResult.success("合同已拒绝");
@@ -150,17 +177,22 @@ public class RentalContractServiceImpl extends ServiceImpl<RentalContractMapper,
         boolean isLandlord = Objects.equals(LocalThreadHolder.getUserId(), getLandlordUserId(dbContract.getLandlordId()));
         boolean isTenant = Objects.equals(LocalThreadHolder.getUserId(), dbContract.getTenantUserId());
         AssertUtils.isTrue(isAdmin || isLandlord || isTenant, "非法操作");
-        AssertUtils.isFalse(Objects.equals(dbContract.getStatus(), RentalContractStatusEnum.STATUS_3.getType())
-                        || Objects.equals(dbContract.getStatus(), RentalContractStatusEnum.STATUS_4.getType())
+        AssertUtils.isFalse(Objects.equals(dbContract.getStatus(), RentalContractStatusEnum.STATUS_4.getType())
                         || Objects.equals(dbContract.getStatus(), RentalContractStatusEnum.STATUS_5.getType()),
+                "当前状态无法取消");
+        AssertUtils.isFalse(Objects.equals(dbContract.getStatus(), RentalContractStatusEnum.STATUS_6.getType())
+                        || Objects.equals(dbContract.getStatus(), RentalContractStatusEnum.STATUS_7.getType()),
                 "当前状态无法取消");
 
         dbContract.setCancelReason(rentalContract.getCancelReason());
-        updateStatus(dbContract, RentalContractStatusEnum.STATUS_4.getType(), rentalContract.getCancelReason());
+        Integer beforeStatus = dbContract.getStatus();
+        updateStatus(dbContract, RentalContractStatusEnum.STATUS_6.getType(), rentalContract.getCancelReason());
         dbContract.setUpdateTime(LocalDateTime.now());
         updateById(dbContract);
         rentalBillService.cancelPendingBillsByContractId(dbContract.getId());
-        recoverHouseStatusIfNeeded(dbContract.getHouseId());
+        if (Objects.equals(beforeStatus, RentalContractStatusEnum.STATUS_3.getType())) {
+            recoverHouseStatusIfNeeded(dbContract.getHouseId());
+        }
         return ApiResult.success("合同已取消");
     }
 

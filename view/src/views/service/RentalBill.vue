@@ -276,7 +276,7 @@ export default {
                 const { data } = await this.$axios.post('/rental-contract/listLandlord', {
                     current: 1,
                     size: 1000,
-                    status: 2,
+                    status: 3,
                 });
                 this.contractOptions = data || [];
             } catch (error) {

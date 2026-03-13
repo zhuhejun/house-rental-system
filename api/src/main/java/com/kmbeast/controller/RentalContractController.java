@@ -33,6 +33,18 @@ public class RentalContractController {
         return rentalContractService.getById(id);
     }
 
+    @PutMapping(value = "/adminApprove/{id}")
+    @ResponseBody
+    public Result<String> adminApprove(@PathVariable Integer id) {
+        return rentalContractService.adminApprove(id);
+    }
+
+    @PutMapping(value = "/adminReject")
+    @ResponseBody
+    public Result<String> adminReject(@RequestBody RentalContract rentalContract) {
+        return rentalContractService.adminReject(rentalContract);
+    }
+
     @PutMapping(value = "/tenantConfirm/{id}")
     @ResponseBody
     public Result<String> tenantConfirm(@PathVariable Integer id) {

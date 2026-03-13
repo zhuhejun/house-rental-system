@@ -4,11 +4,11 @@
             <div class="nav-left">
                 <Tab :buttons="[
                     { label: '全部', value: 'null' },
-                    { label: '待确认', value: '1' },
-                    { label: '已生效', value: '2' },
-                    { label: '已拒绝', value: '3' },
-                    { label: '已取消', value: '4' },
-                    { label: '已到期', value: '5' }
+                    { label: '待确认', value: '2' },
+                    { label: '已生效', value: '3' },
+                    { label: '已拒绝', value: '5' },
+                    { label: '已取消', value: '6' },
+                    { label: '已到期', value: '7' }
                 ]" initialActive="null" @change="handleChange" />
             </div>
             <div class="nav-right">
@@ -35,8 +35,8 @@
                 <template #default="scope">
                     <div class="table-actions">
                         <span @click="showDetail(scope.row.id)">详情</span>
-                        <span v-if="scope.row.status === 1" @click="confirmContract(scope.row.id)">确认</span>
-                        <span v-if="scope.row.status === 1" @click="rejectContract(scope.row.id)">拒绝</span>
+                        <span v-if="scope.row.status === 2" @click="confirmContract(scope.row.id)">确认</span>
+                        <span v-if="scope.row.status === 2" @click="rejectContract(scope.row.id)">拒绝</span>
                     </div>
                 </template>
             </el-table-column>
@@ -95,11 +95,11 @@ export default {
             detail: {},
             statusList: [],
             contractStatusConfig: {
-                1: { text: "待租客确认", icon: "el-icon-time", color: "#409EFF", status: "process" },
-                2: { text: "已生效", icon: "el-icon-success", color: "#67C23A", status: "success" },
-                3: { text: "已拒绝", icon: "el-icon-close", color: "#F56C6C", status: "error" },
-                4: { text: "已取消", icon: "el-icon-warning", color: "#E6A23C", status: "error" },
-                5: { text: "已到期", icon: "el-icon-finished", color: "#909399", status: "success" }
+                2: { text: "待租客确认", icon: "el-icon-time", color: "#409EFF", status: "process" },
+                3: { text: "已生效", icon: "el-icon-success", color: "#67C23A", status: "success" },
+                5: { text: "已拒绝", icon: "el-icon-close", color: "#F56C6C", status: "error" },
+                6: { text: "已取消", icon: "el-icon-warning", color: "#909399", status: "error" },
+                7: { text: "已到期", icon: "el-icon-finished", color: "#909399", status: "success" }
             }
         };
     },
@@ -111,10 +111,10 @@ export default {
             return (this.contractStatusConfig[status] && this.contractStatusConfig[status].text) || '未知状态';
         },
         statusType(status) {
-            if (status === 2) return 'success';
-            if (status === 1) return '';
-            if (status === 3) return 'danger';
-            if (status === 4) return 'warning';
+            if (status === 3) return 'success';
+            if (status === 2) return 'warning';
+            if (status === 5) return 'danger';
+            if (status === 6) return 'info';
             return 'info';
         },
         utilityModeText(type) {

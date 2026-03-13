@@ -4,11 +4,13 @@
             <div class="nav-left">
                 <Tab :buttons="[
                     { label: '全部', value: 'null' },
-                    { label: '待确认', value: '1' },
-                    { label: '已生效', value: '2' },
-                    { label: '已拒绝', value: '3' },
-                    { label: '已取消', value: '4' },
-                    { label: '已到期', value: '5' }
+                    { label: '待管理员审核', value: '1' },
+                    { label: '待租客确认', value: '2' },
+                    { label: '已生效', value: '3' },
+                    { label: '已驳回', value: '4' },
+                    { label: '已拒绝', value: '5' },
+                    { label: '已取消', value: '6' },
+                    { label: '已到期', value: '7' }
                 ]" initialActive="null" @change="handleChange" />
             </div>
             <div class="nav-right">
@@ -32,7 +34,9 @@
                 <template #default="scope">
                     <div class="table-actions">
                         <span @click="showDetail(scope.row.id)">详情</span>
-                        <span v-if="scope.row.status === 1 || scope.row.status === 2" @click="cancelContract(scope.row.id)">取消</span>
+                        <span v-if="scope.row.status === 1" @click="approveContract(scope.row.id)">通过</span>
+                        <span v-if="scope.row.status === 1" @click="rejectContract(scope.row.id)">驳回</span>
+                        <span v-if="[2, 3].includes(scope.row.status)" @click="cancelContract(scope.row.id)">取消</span>
                     </div>
                 </template>
             </el-table-column>
@@ -92,11 +96,13 @@ export default {
             detail: {},
             statusList: [],
             contractStatusConfig: {
-                1: { text: "待租客确认", icon: "el-icon-time", color: "#409EFF", status: "process" },
-                2: { text: "已生效", icon: "el-icon-success", color: "#67C23A", status: "success" },
-                3: { text: "已拒绝", icon: "el-icon-close", color: "#F56C6C", status: "error" },
-                4: { text: "已取消", icon: "el-icon-warning", color: "#E6A23C", status: "error" },
-                5: { text: "已到期", icon: "el-icon-finished", color: "#909399", status: "success" }
+                1: { text: "待管理员审核", icon: "el-icon-s-check", color: "#E6A23C", status: "process" },
+                2: { text: "待租客确认", icon: "el-icon-time", color: "#409EFF", status: "process" },
+                3: { text: "已生效", icon: "el-icon-success", color: "#67C23A", status: "success" },
+                4: { text: "已驳回", icon: "el-icon-close", color: "#F56C6C", status: "error" },
+                5: { text: "已拒绝", icon: "el-icon-close", color: "#F56C6C", status: "error" },
+                6: { text: "已取消", icon: "el-icon-warning", color: "#909399", status: "error" },
+                7: { text: "已到期", icon: "el-icon-finished", color: "#909399", status: "success" }
             }
         };
     },
@@ -108,10 +114,10 @@ export default {
             return (this.contractStatusConfig[status] && this.contractStatusConfig[status].text) || '未知状态';
         },
         statusType(status) {
-            if (status === 2) return 'success';
-            if (status === 1) return '';
-            if (status === 3) return 'danger';
-            if (status === 4) return 'warning';
+            if (status === 3) return 'success';
+            if (status === 1 || status === 2) return 'warning';
+            if (status === 4 || status === 5) return 'danger';
+            if (status === 6) return 'info';
             return 'info';
         },
         utilityModeText(type) {
@@ -175,6 +181,32 @@ export default {
                     return;
                 }
                 this.$message.error(error.message || '取消失败');
+            }
+        },
+        async approveContract(id) {
+            try {
+                await this.$axios.put(`/rental-contract/adminApprove/${id}`);
+                this.$message.success('合同审核通过，已发放给租客');
+                this.fetchFreshData();
+            } catch (error) {
+                this.$message.error(error.message || '审核失败');
+            }
+        },
+        async rejectContract(id) {
+            try {
+                const { value } = await this.$prompt('请输入驳回原因（可为空）', '驳回合同', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    inputPlaceholder: '驳回原因'
+                });
+                await this.$axios.put('/rental-contract/adminReject', { id, rejectReason: value || '' });
+                this.$message.success('合同已驳回');
+                this.fetchFreshData();
+            } catch (error) {
+                if (error === 'cancel') {
+                    return;
+                }
+                this.$message.error(error.message || '驳回失败');
             }
         }
     }

@@ -23,6 +23,10 @@ public interface RentalContractService extends IService<RentalContract> {
 
     Result<RentalContractVO> getById(Integer id);
 
+    Result<String> adminApprove(Integer id);
+
+    Result<String> adminReject(RentalContract rentalContract);
+
     Result<String> tenantConfirm(Integer id);
 
     Result<String> tenantReject(RentalContract rentalContract);

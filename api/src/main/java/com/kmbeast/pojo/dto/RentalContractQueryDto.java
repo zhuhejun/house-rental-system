@@ -21,4 +21,6 @@ public class RentalContractQueryDto extends QueryDto {
     private Integer houseOrderInfoId;
 
     private Integer status;
+
+    private Boolean tenantVisible;
 }

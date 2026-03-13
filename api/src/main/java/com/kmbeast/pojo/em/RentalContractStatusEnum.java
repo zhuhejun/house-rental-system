@@ -10,11 +10,13 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum RentalContractStatusEnum {
 
-    STATUS_1(1, "待租客确认"),
-    STATUS_2(2, "已生效"),
-    STATUS_3(3, "已拒绝"),
-    STATUS_4(4, "已取消"),
-    STATUS_5(5, "已到期");
+    STATUS_1(1, "待管理员审核"),
+    STATUS_2(2, "待租客确认"),
+    STATUS_3(3, "已生效"),
+    STATUS_4(4, "已驳回"),
+    STATUS_5(5, "已拒绝"),
+    STATUS_6(6, "已取消"),
+    STATUS_7(7, "已到期");
 
     private final Integer type;
 

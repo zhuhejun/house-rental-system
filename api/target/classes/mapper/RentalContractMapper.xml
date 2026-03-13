@@ -57,6 +57,9 @@
             <if test="status != null">
                 AND rc.status = #{status}
             </if>
+            <if test="tenantVisible != null and tenantVisible">
+                AND rc.status NOT IN (1, 4)
+            </if>
         </where>
         ORDER BY rc.id DESC
         <if test="current != null and size != null">
@@ -92,6 +95,9 @@
             </if>
             <if test="status != null">
                 AND rc.status = #{status}
+            </if>
+            <if test="tenantVisible != null and tenantVisible">
+                AND rc.status NOT IN (1, 4)
             </if>
         </where>
     </select>
@@ -134,7 +140,7 @@
         SELECT COUNT(*)
         FROM rental_contract
         WHERE house_id = #{houseId}
-          AND status IN (1, 2)
+          AND status IN (1, 2, 3)
         <if test="excludeId != null">
             AND id != #{excludeId}
         </if>
