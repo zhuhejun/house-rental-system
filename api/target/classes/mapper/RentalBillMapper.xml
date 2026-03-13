@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kmbeast.mapper.RentalBillMapper">
+
+    <select id="list" resultMap="BaseResultMap">
+        SELECT rb.id,
+               rb.bill_no,
+               rb.contract_id,
+               rb.house_id,
+               rb.landlord_id,
+               rb.tenant_user_id,
+               rb.bill_type,
+               rb.bill_month,
+               rb.utility_payment_mode,
+               rb.rent_amount,
+               rb.deposit_amount,
+               rb.water_amount,
+               rb.electric_amount,
+               rb.total_amount,
+               rb.due_date,
+               rb.remark,
+               rb.utility_proof_url,
+               rb.utility_proof_status,
+               rb.utility_proof_note,
+               rb.pay_status,
+               rb.paid_time,
+               rb.create_time,
+               rb.update_time,
+               rc.contract_no,
+               rc.title AS contract_title,
+               h.name AS house_name,
+               h.cover AS house_cover,
+               lu.username AS landlord_name,
+               tu.username AS tenant_name
+        FROM rental_bill rb
+        LEFT JOIN rental_contract rc ON rc.id = rb.contract_id
+        LEFT JOIN house h ON h.id = rb.house_id
+        LEFT JOIN landlord l ON l.id = rb.landlord_id
+        LEFT JOIN user lu ON lu.id = l.user_id
+        LEFT JOIN user tu ON tu.id = rb.tenant_user_id
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    rb.bill_no LIKE concat('%',#{keyword},'%')
+                    OR rc.contract_no LIKE concat('%',#{keyword},'%')
+                    OR h.name LIKE concat('%',#{keyword},'%')
+                    OR tu.username LIKE concat('%',#{keyword},'%')
+                )
+            </if>
+            <if test="contractId != null">
+                AND rb.contract_id = #{contractId}
+            </if>
+            <if test="landlordId != null">
+                AND rb.landlord_id = #{landlordId}
+            </if>
+            <if test="tenantUserId != null">
+                AND rb.tenant_user_id = #{tenantUserId}
+            </if>
+            <if test="billType != null">
+                AND rb.bill_type = #{billType}
+            </if>
+            <if test="payStatus != null">
+                AND rb.pay_status = #{payStatus}
+            </if>
+            <if test="utilityPaymentMode != null">
+                AND rb.utility_payment_mode = #{utilityPaymentMode}
+            </if>
+            <if test="utilityProofStatus != null">
+                AND rb.utility_proof_status = #{utilityProofStatus}
+            </if>
+        </where>
+        ORDER BY rb.id DESC
+        <if test="current != null and size != null">
+            LIMIT #{current},#{size}
+        </if>
+    </select>
+
+    <select id="listCount" resultType="integer">
+        SELECT COUNT(*)
+        FROM rental_bill rb
+        LEFT JOIN rental_contract rc ON rc.id = rb.contract_id
+        LEFT JOIN house h ON h.id = rb.house_id
+        LEFT JOIN user tu ON tu.id = rb.tenant_user_id
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    rb.bill_no LIKE concat('%',#{keyword},'%')
+                    OR rc.contract_no LIKE concat('%',#{keyword},'%')
+                    OR h.name LIKE concat('%',#{keyword},'%')
+                    OR tu.username LIKE concat('%',#{keyword},'%')
+                )
+            </if>
+            <if test="contractId != null">
+                AND rb.contract_id = #{contractId}
+            </if>
+            <if test="landlordId != null">
+                AND rb.landlord_id = #{landlordId}
+            </if>
+            <if test="tenantUserId != null">
+                AND rb.tenant_user_id = #{tenantUserId}
+            </if>
+            <if test="billType != null">
+                AND rb.bill_type = #{billType}
+            </if>
+            <if test="payStatus != null">
+                AND rb.pay_status = #{payStatus}
+            </if>
+            <if test="utilityPaymentMode != null">
+                AND rb.utility_payment_mode = #{utilityPaymentMode}
+            </if>
+            <if test="utilityProofStatus != null">
+                AND rb.utility_proof_status = #{utilityProofStatus}
+            </if>
+        </where>
+    </select>
+
+    <select id="getById" resultMap="BaseResultMap">
+        SELECT rb.id,
+               rb.bill_no,
+               rb.contract_id,
+               rb.house_id,
+               rb.landlord_id,
+               rb.tenant_user_id,
+               rb.bill_type,
+               rb.bill_month,
+               rb.utility_payment_mode,
+               rb.rent_amount,
+               rb.deposit_amount,
+               rb.water_amount,
+               rb.electric_amount,
+               rb.total_amount,
+               rb.due_date,
+               rb.remark,
+               rb.utility_proof_url,
+               rb.utility_proof_status,
+               rb.utility_proof_note,
+               rb.pay_status,
+               rb.paid_time,
+               rb.create_time,
+               rb.update_time,
+               rc.contract_no,
+               rc.title AS contract_title,
+               h.name AS house_name,
+               h.cover AS house_cover,
+               lu.username AS landlord_name,
+               tu.username AS tenant_name
+        FROM rental_bill rb
+        LEFT JOIN rental_contract rc ON rc.id = rb.contract_id
+        LEFT JOIN house h ON h.id = rb.house_id
+        LEFT JOIN landlord l ON l.id = rb.landlord_id
+        LEFT JOIN user lu ON lu.id = l.user_id
+        LEFT JOIN user tu ON tu.id = rb.tenant_user_id
+        WHERE rb.id = #{id}
+    </select>
+
+    <select id="countByContractAndType" resultType="integer">
+        SELECT COUNT(*)
+        FROM rental_bill
+        WHERE contract_id = #{contractId}
+          AND bill_type = #{billType}
+        <if test="billMonth != null and billMonth != ''">
+            AND bill_month = #{billMonth}
+        </if>
+        <if test="billMonth == null or billMonth == ''">
+            AND (bill_month IS NULL OR bill_month = '')
+        </if>
+    </select>
+
+    <select id="listPendingByContractId" resultType="com.kmbeast.pojo.entity.RentalBill">
+        SELECT *
+        FROM rental_bill
+        WHERE contract_id = #{contractId}
+          AND pay_status = 1
+    </select>
+
+    <resultMap id="BaseResultMap" type="com.kmbeast.pojo.vo.RentalBillVO">
+        <id column="id" property="id"/>
+        <result column="bill_no" property="billNo"/>
+        <result column="contract_id" property="contractId"/>
+        <result column="house_id" property="houseId"/>
+        <result column="landlord_id" property="landlordId"/>
+        <result column="tenant_user_id" property="tenantUserId"/>
+        <result column="bill_type" property="billType"/>
+        <result column="bill_month" property="billMonth"/>
+        <result column="utility_payment_mode" property="utilityPaymentMode"/>
+        <result column="rent_amount" property="rentAmount"/>
+        <result column="deposit_amount" property="depositAmount"/>
+        <result column="water_amount" property="waterAmount"/>
+        <result column="electric_amount" property="electricAmount"/>
+        <result column="total_amount" property="totalAmount"/>
+        <result column="due_date" property="dueDate"/>
+        <result column="remark" property="remark"/>
+        <result column="utility_proof_url" property="utilityProofUrl"/>
+        <result column="utility_proof_status" property="utilityProofStatus"/>
+        <result column="utility_proof_note" property="utilityProofNote"/>
+        <result column="pay_status" property="payStatus"/>
+        <result column="paid_time" property="paidTime"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="contract_no" property="contractNo"/>
+        <result column="contract_title" property="contractTitle"/>
+        <result column="house_name" property="houseName"/>
+        <result column="house_cover" property="houseCover"/>
+        <result column="landlord_name" property="landlordName"/>
+        <result column="tenant_name" property="tenantName"/>
+    </resultMap>
+
+</mapper>

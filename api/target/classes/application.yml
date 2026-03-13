@@ -1,0 +1,41 @@
+# 服务配置
+server:
+  port: 21090
+  servlet:
+    context-path: /api/v1.0/house-rental-api
+# API地址前缀，用于接口拦截放行
+my-server:
+  api-context-path: /api/v1.0/house-rental-api
+#MySQL与文件上传限制配置
+spring:
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/house-rental?characterEncoding=utf8&useSSL=false&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true
+    username: root
+    password: root
+# Mybatis Plus配置
+mybatis-plus:
+  configuration:
+#    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl # 开启日志
+    map-underscore-to-camel-case: true # 开启驼峰命名
+  global-config:
+    db-config:
+      id-type: auto # 主键策略
+  mapper-locations: classpath*:/mapper/**/*.xml # mapper文件位置
+
+alipay:
+  app-id: ${ALIPAY_APP_ID:9021000162607038}
+  private-key: ${ALIPAY_PRIVATE_KEY:MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC8NPexF0iUHt/3fKeXhuokelMIanNzilvYmpbsapd5bEjpbJ78066GS4/q7qQ6FT0X4nRgjorzYsd1sYVpgXz5qbYQ/kBGEnRXhtnh0rMB3GB4/ETUWdjiPuZWQeIB9ueShUJBDIV9t2eGhzz6oYLLr0RYgJ8Zbq7ZJ+2kJ1pVMtIZb53+CfoApUeOr8OxppftoalTe+qj6wQ6HG9wPNFjreuyWpIIWoF/rvI10JQhwEowQWLVGZZdIyZkKJ8GjOH/FORaAtsrQbGIbfxZI5QUP4hE0ii/KtsnFgzZM6J0GOZVKIlubRM+RFC3avztqzEVhVUe7kpLXlrfxQKoGoiLAgMBAAECggEAK7YNlPa4Z5ZoI/2ymtG9za0PXdQDbmFDBaKZzNzQw2Wv5W7R2hx72zrvePvl7ouCPerdZpOUmARoGOCbAK8PTJjq7TVvzhZ5KN7r+bPK2XLKgS7t+XfIlHtRWdVBXX1vuSr0AVGcK1+OTsNYGUmrrAzPzdJJoUmAmHTaj5aIN2MI0xJakS0sLjXAjDNPwROl4r1c9ug7UMNn8M3/li42Q0U3TxgqrswfN2No98ARxqBTX8S8T8Es/0KCJwtLlSjYzFGRxZUAQMjqetCj1e1UUZOPGkSnnApewR386tcT2d1oFfIYARD+J9Rub5RrxLgVmbA+dRNyBJRb2ODq6JD0UQKBgQDxxRMM/kqHjl+z894yc3hGR1bKwC4K7BotbLhiT+pbs3lsymz2JYqs9SMbp7rSgc8ah3hW4onRuEtU1r7Ew78Y8fQ6RgzWL5UeTCeImv3M/Cw/Z1SS5Uhp6hnnTHFLKLLYvb9S5mhs8VS4Q4ZZVrV14NxSN8Pg7igxtbNM8GUbyQKBgQDHSNIi6R0wfj95tFoe2eq5e5XNbrP6PdD+0+JJgMPPunksmyRbrBHYFNZW9uH6oQidZp45d8rfsroXum4Y4wNe+M3hYDi50rvxcUT6Wfi7jtGP1/6wZXtDFDy2t2Ui0hRulHb0coHC7eHzcU4wOgnB1g6CwTC3kkkbxcPxZk7DswKBgQCsVZjlyyFfDPpk8HEzLyHNnq5cKa7oNDHYrUWlNmfMY9sq1APlVQ9LiBU1clL2GHeC5ou+Cw7IQgDYgZZL9WfzJQy8uRAPYK1/gjMv6aL+CcaUj1g2uV7ruGYsfE3JkEIjwuVs9zX6ae/ExMUwS2FfnCAQLxXd8IUQIf+j2TuJGQKBgCwkqE+NXabhQERAO/o7gTAG/R7dV8alrMbVvnlTqYw5HSBRWVNpISbBLt1ioJn408Sx93h5XZoBqBEbfcnLd3KxIEG9I7Odx33q/kGKbnt1XlxDlyoRwKUSNYSvyRpWeKop/tOVDcNVGEjpn001ffXO6bXy/0yafdFGFGpDpEzbAoGAWy5JUakCGYuiWUgTpKtbcUUbs5DxKmtOSC8hD0unTTu5ZoZPVaviphgp3G6XnscGJdvDbJQjoJY6zKngPlTF3xOxYtVa5Ts6iIwna3MvWYGy16DL4Ar5pAftgTMpOw3cwLaZaFSEA62sO7WEHkUrZCcXDIK7/tUAr/Iifya2O7k=}
+  public-key: ${ALIPAY_PUBLIC_KEY:MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAhcNAhe3/VGdi0apvXMrqW1saNtmoosjPXvzs/jhzigT+0DCTGrVznNjrG9s2ERwRXWR40dXkrVtwJHzP/51ypb7lkFEzR8mIfwim6YZK2UgPNaDqzsd/gRWL21up+Ishv0d8RixG973Kik3iYWfaJD61rpoxatFr/K/f6tTrCIiPSPEtYrfkSEZkhy5L6mhVwpi9o6g9sXQsvrVxJaRpuRp+d/KhNGMd9nVUY7VJd0ZaKRb8cWFpkdIyiywdQzEO+CjuGFxu3wwtdXsppKaiEQJDfYvv/QAvXFaK4bljkxf04NI/VMvmnTbgkfKBzfbizAwm+r0lirkZl//x8KwTfwIDAQAB}
+  gateway-url: ${ALIPAY_GATEWAY_URL:https://openapi-sandbox.dl.alipaydev.com/gateway.do}
+  notify-url: ${ALIPAY_NOTIFY_URL:http://ee2d7d64.natappfree.cc/api/v1.0/house-rental-api/payment-order/notify}
+  return-url: ${ALIPAY_RETURN_URL:http://localhost:21091/payment-result}
+  charset: UTF-8
+  sign-type: RSA2
+  format: json
+
+

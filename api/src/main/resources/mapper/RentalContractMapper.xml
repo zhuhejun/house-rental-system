@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kmbeast.mapper.RentalContractMapper">
+
+    <select id="list" resultMap="BaseResultMap">
+        SELECT rc.id,
+               rc.contract_no,
+               rc.title,
+               rc.house_id,
+               rc.landlord_id,
+               rc.tenant_user_id,
+               rc.house_order_info_id,
+               rc.start_date,
+               rc.end_date,
+               rc.monthly_rent,
+               rc.deposit_amount,
+               rc.pay_cycle,
+               rc.utility_payment_mode,
+               rc.contract_content,
+               rc.attachment_url,
+               rc.status,
+               rc.reject_reason,
+               rc.cancel_reason,
+               rc.confirm_time,
+               rc.create_time,
+               rc.update_time,
+               h.name AS house_name,
+               h.cover AS house_cover,
+               lu.username AS landlord_name,
+               tu.username AS tenant_name
+        FROM rental_contract rc
+        LEFT JOIN house h ON h.id = rc.house_id
+        LEFT JOIN landlord l ON l.id = rc.landlord_id
+        LEFT JOIN user lu ON lu.id = l.user_id
+        LEFT JOIN user tu ON tu.id = rc.tenant_user_id
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    rc.contract_no LIKE concat('%',#{keyword},'%')
+                    OR rc.title LIKE concat('%',#{keyword},'%')
+                    OR h.name LIKE concat('%',#{keyword},'%')
+                    OR tu.username LIKE concat('%',#{keyword},'%')
+                )
+            </if>
+            <if test="landlordId != null">
+                AND rc.landlord_id = #{landlordId}
+            </if>
+            <if test="tenantUserId != null">
+                AND rc.tenant_user_id = #{tenantUserId}
+            </if>
+            <if test="houseId != null">
+                AND rc.house_id = #{houseId}
+            </if>
+            <if test="houseOrderInfoId != null">
+                AND rc.house_order_info_id = #{houseOrderInfoId}
+            </if>
+            <if test="status != null">
+                AND rc.status = #{status}
+            </if>
+        </where>
+        ORDER BY rc.id DESC
+        <if test="current != null and size != null">
+            LIMIT #{current},#{size}
+        </if>
+    </select>
+
+    <select id="listCount" resultType="integer">
+        SELECT COUNT(*)
+        FROM rental_contract rc
+        LEFT JOIN house h ON h.id = rc.house_id
+        LEFT JOIN user tu ON tu.id = rc.tenant_user_id
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    rc.contract_no LIKE concat('%',#{keyword},'%')
+                    OR rc.title LIKE concat('%',#{keyword},'%')
+                    OR h.name LIKE concat('%',#{keyword},'%')
+                    OR tu.username LIKE concat('%',#{keyword},'%')
+                )
+            </if>
+            <if test="landlordId != null">
+                AND rc.landlord_id = #{landlordId}
+            </if>
+            <if test="tenantUserId != null">
+                AND rc.tenant_user_id = #{tenantUserId}
+            </if>
+            <if test="houseId != null">
+                AND rc.house_id = #{houseId}
+            </if>
+            <if test="houseOrderInfoId != null">
+                AND rc.house_order_info_id = #{houseOrderInfoId}
+            </if>
+            <if test="status != null">
+                AND rc.status = #{status}
+            </if>
+        </where>
+    </select>
+
+    <select id="getById" resultMap="BaseResultMap">
+        SELECT rc.id,
+               rc.contract_no,
+               rc.title,
+               rc.house_id,
+               rc.landlord_id,
+               rc.tenant_user_id,
+               rc.house_order_info_id,
+               rc.start_date,
+               rc.end_date,
+               rc.monthly_rent,
+               rc.deposit_amount,
+               rc.pay_cycle,
+               rc.utility_payment_mode,
+               rc.contract_content,
+               rc.attachment_url,
+               rc.status,
+               rc.reject_reason,
+               rc.cancel_reason,
+               rc.confirm_time,
+               rc.create_time,
+               rc.update_time,
+               h.name AS house_name,
+               h.cover AS house_cover,
+               lu.username AS landlord_name,
+               tu.username AS tenant_name
+        FROM rental_contract rc
+        LEFT JOIN house h ON h.id = rc.house_id
+        LEFT JOIN landlord l ON l.id = rc.landlord_id
+        LEFT JOIN user lu ON lu.id = l.user_id
+        LEFT JOIN user tu ON tu.id = rc.tenant_user_id
+        WHERE rc.id = #{id}
+    </select>
+
+    <select id="countActiveContractByHouseId" resultType="integer">
+        SELECT COUNT(*)
+        FROM rental_contract
+        WHERE house_id = #{houseId}
+          AND status IN (1, 2)
+        <if test="excludeId != null">
+            AND id != #{excludeId}
+        </if>
+    </select>
+
+    <select id="countContractByOrderId" resultType="integer">
+        SELECT COUNT(*)
+        FROM rental_contract
+        WHERE house_order_info_id = #{houseOrderInfoId}
+    </select>
+
+    <resultMap id="BaseResultMap" type="com.kmbeast.pojo.vo.RentalContractVO">
+        <id column="id" property="id"/>
+        <result column="contract_no" property="contractNo"/>
+        <result column="title" property="title"/>
+        <result column="house_id" property="houseId"/>
+        <result column="landlord_id" property="landlordId"/>
+        <result column="tenant_user_id" property="tenantUserId"/>
+        <result column="house_order_info_id" property="houseOrderInfoId"/>
+        <result column="start_date" property="startDate"/>
+        <result column="end_date" property="endDate"/>
+        <result column="monthly_rent" property="monthlyRent"/>
+        <result column="deposit_amount" property="depositAmount"/>
+        <result column="pay_cycle" property="payCycle"/>
+        <result column="utility_payment_mode" property="utilityPaymentMode"/>
+        <result column="contract_content" property="contractContent"/>
+        <result column="attachment_url" property="attachmentUrl"/>
+        <result column="status" property="status"/>
+        <result column="reject_reason" property="rejectReason"/>
+        <result column="cancel_reason" property="cancelReason"/>
+        <result column="confirm_time" property="confirmTime"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="house_name" property="houseName"/>
+        <result column="house_cover" property="houseCover"/>
+        <result column="landlord_name" property="landlordName"/>
+        <result column="tenant_name" property="tenantName"/>
+    </resultMap>
+
+</mapper>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kmbeast.mapper.RentalContractStatusMapper">
+
+    <select id="list" resultMap="BaseResultMap">
+        SELECT id,
+               origin_status,
+               new_id,
+               rental_contract_id,
+               operator_id,
+               note,
+               create_time
+        FROM rental_contract_status
+        <where>
+            <if test="rentalContractId != null">
+                AND rental_contract_id = #{rentalContractId}
+            </if>
+        </where>
+        ORDER BY id ASC
+        <if test="current != null and size != null">
+            LIMIT #{current},#{size}
+        </if>
+    </select>
+
+    <select id="listCount" resultType="integer">
+        SELECT COUNT(*)
+        FROM rental_contract_status
+        <where>
+            <if test="rentalContractId != null">
+                AND rental_contract_id = #{rentalContractId}
+            </if>
+        </where>
+    </select>
+
+    <resultMap id="BaseResultMap" type="com.kmbeast.pojo.vo.RentalContractStatusVO">
+        <id column="id" property="id"/>
+        <result column="origin_status" property="originStatus"/>
+        <result column="new_id" property="newId"/>
+        <result column="rental_contract_id" property="rentalContractId"/>
+        <result column="operator_id" property="operatorId"/>
+        <result column="note" property="note"/>
+        <result column="create_time" property="createTime"/>
+    </resultMap>
+
+</mapper>

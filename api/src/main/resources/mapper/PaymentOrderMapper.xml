@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kmbeast.mapper.PaymentOrderMapper">
+
+    <select id="selectPendingByBillId" resultType="com.kmbeast.pojo.entity.PaymentOrder">
+        SELECT *
+        FROM payment_order
+        WHERE rental_bill_id = #{rentalBillId}
+          AND status = 1
+        ORDER BY id DESC
+        LIMIT 1
+    </select>
+
+    <select id="selectByOutTradeNo" resultType="com.kmbeast.pojo.entity.PaymentOrder">
+        SELECT *
+        FROM payment_order
+        WHERE out_trade_no = #{outTradeNo}
+        LIMIT 1
+    </select>
+
+</mapper>
