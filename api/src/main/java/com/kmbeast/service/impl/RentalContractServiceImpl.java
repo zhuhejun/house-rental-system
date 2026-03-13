@@ -172,11 +172,18 @@ public class RentalContractServiceImpl extends ServiceImpl<RentalContractMapper,
         boolean isLandlord = Objects.equals(LocalThreadHolder.getUserId(), getLandlordUserId(dbContract.getLandlordId()));
         boolean isTenant = Objects.equals(LocalThreadHolder.getUserId(), dbContract.getTenantUserId());
         AssertUtils.isTrue(isAdmin || isLandlord || isTenant, "非法操作");
+        AssertUtils.isFalse(Objects.equals(dbContract.getStatus(), RentalContractStatusEnum.STATUS_4.getType()),
+                "已生效合同请通过退租流程处理");
         AssertUtils.isFalse(Objects.equals(dbContract.getStatus(), RentalContractStatusEnum.STATUS_5.getType())
                         || Objects.equals(dbContract.getStatus(), RentalContractStatusEnum.STATUS_6.getType()),
                 "当前状态无法取消");
         AssertUtils.isFalse(Objects.equals(dbContract.getStatus(), RentalContractStatusEnum.STATUS_7.getType())
-                        || Objects.equals(dbContract.getStatus(), RentalContractStatusEnum.STATUS_8.getType()),
+                        || Objects.equals(dbContract.getStatus(), RentalContractStatusEnum.STATUS_8.getType())
+                        || Objects.equals(dbContract.getStatus(), RentalContractStatusEnum.STATUS_9.getType())
+                        || Objects.equals(dbContract.getStatus(), RentalContractStatusEnum.STATUS_10.getType())
+                        || Objects.equals(dbContract.getStatus(), RentalContractStatusEnum.STATUS_11.getType())
+                        || Objects.equals(dbContract.getStatus(), RentalContractStatusEnum.STATUS_12.getType())
+                        || Objects.equals(dbContract.getStatus(), RentalContractStatusEnum.STATUS_13.getType()),
                 "当前状态无法取消");
 
         dbContract.setCancelReason(rentalContract.getCancelReason());
@@ -189,6 +196,129 @@ public class RentalContractServiceImpl extends ServiceImpl<RentalContractMapper,
             recoverHouseStatusIfNeeded(dbContract.getHouseId());
         }
         return ApiResult.success("合同已取消");
+    }
+
+    @Override
+    public Result<String> applyTerminate(RentalContract rentalContract) {
+        AssertUtils.notNull(rentalContract, "合同数据不能为空");
+        AssertUtils.notNull(rentalContract.getId(), "合同ID不能为空");
+        AssertUtils.hasText(rentalContract.getTerminationReason(), "请填写退租原因");
+        RentalContract dbContract = getEntityById(rentalContract.getId());
+        boolean isLandlord = Objects.equals(LocalThreadHolder.getUserId(), getLandlordUserId(dbContract.getLandlordId()));
+        boolean isTenant = Objects.equals(LocalThreadHolder.getUserId(), dbContract.getTenantUserId());
+        AssertUtils.isTrue(isLandlord || isTenant, "非法操作");
+        AssertUtils.equals(dbContract.getStatus(), RentalContractStatusEnum.STATUS_4.getType(), "仅已生效合同可申请退租");
+        dbContract.setTerminationReason(rentalContract.getTerminationReason());
+        dbContract.setTerminationApplyUserId(LocalThreadHolder.getUserId());
+        dbContract.setTerminationApplyTime(LocalDateTime.now());
+        dbContract.setTerminationAuditNote(null);
+        dbContract.setTerminationAuditTime(null);
+        dbContract.setTerminationRefundVoucherUrl(null);
+        dbContract.setTerminationRefundVoucherNote(null);
+        dbContract.setTerminationRefundTime(null);
+        updateStatus(dbContract, RentalContractStatusEnum.STATUS_9.getType(), rentalContract.getTerminationReason());
+        dbContract.setUpdateTime(LocalDateTime.now());
+        updateById(dbContract);
+        return ApiResult.success("退租申请已提交，等待房东确认退押金额并上传凭证");
+    }
+
+    @Override
+    public Result<String> submitTerminateSettlement(RentalContract rentalContract) {
+        AssertUtils.notNull(rentalContract, "合同数据不能为空");
+        AssertUtils.notNull(rentalContract.getId(), "合同ID不能为空");
+        AssertUtils.notNull(rentalContract.getTerminationRefundAmount(), "请填写退还押金金额");
+        AssertUtils.hasText(rentalContract.getTerminationVoucherUrl(), "请上传退押凭证");
+        RentalContract dbContract = getEntityById(rentalContract.getId());
+        AssertUtils.equals(LocalThreadHolder.getUserId(), getLandlordUserId(dbContract.getLandlordId()), "非法操作");
+        AssertUtils.equals(dbContract.getStatus(), RentalContractStatusEnum.STATUS_9.getType(), "当前状态无法提交退租结算");
+        AssertUtils.notNegative(rentalContract.getTerminationRefundAmount(), "退还押金金额不能小于0");
+        AssertUtils.isTrue(rentalContract.getTerminationRefundAmount().compareTo(defaultAmount(dbContract.getDepositAmount())) <= 0,
+                "退还押金金额不能大于合同押金");
+        dbContract.setTerminationRefundAmount(rentalContract.getTerminationRefundAmount());
+        dbContract.setTerminationVoucherUrl(rentalContract.getTerminationVoucherUrl());
+        dbContract.setTerminationVoucherNote(rentalContract.getTerminationVoucherNote());
+        dbContract.setUpdateTime(LocalDateTime.now());
+        updateStatus(dbContract, RentalContractStatusEnum.STATUS_10.getType(), "房东已提交退租结算凭证");
+        updateById(dbContract);
+        return ApiResult.success("退租结算已提交，等待管理员审核");
+    }
+
+    @Override
+    public Result<String> adminApproveTerminate(Integer id) {
+        AssertUtils.notNull(id, "合同ID不能为空");
+        AssertUtils.equals(LocalThreadHolder.getRoleId(), RoleEnum.ADMIN.getRole(), "非法操作");
+        RentalContract dbContract = getEntityById(id);
+        AssertUtils.equals(dbContract.getStatus(), RentalContractStatusEnum.STATUS_10.getType(), "当前状态无法审核通过");
+        dbContract.setTerminationAuditTime(LocalDateTime.now());
+        dbContract.setUpdateTime(LocalDateTime.now());
+        updateStatus(dbContract, RentalContractStatusEnum.STATUS_11.getType(), "管理员审核通过，等待房东退还押金");
+        updateById(dbContract);
+        return ApiResult.success("退租已审核通过，等待房东退还押金");
+    }
+
+    @Override
+    public Result<String> adminRejectTerminate(RentalContract rentalContract) {
+        AssertUtils.notNull(rentalContract, "合同数据不能为空");
+        AssertUtils.notNull(rentalContract.getId(), "合同ID不能为空");
+        AssertUtils.hasText(rentalContract.getTerminationAuditNote(), "请填写驳回原因");
+        AssertUtils.equals(LocalThreadHolder.getRoleId(), RoleEnum.ADMIN.getRole(), "非法操作");
+        RentalContract dbContract = getEntityById(rentalContract.getId());
+        AssertUtils.equals(dbContract.getStatus(), RentalContractStatusEnum.STATUS_10.getType(), "当前状态无法驳回");
+        dbContract.setTerminationAuditNote(rentalContract.getTerminationAuditNote());
+        dbContract.setTerminationAuditTime(LocalDateTime.now());
+        dbContract.setUpdateTime(LocalDateTime.now());
+        updateStatus(dbContract, RentalContractStatusEnum.STATUS_9.getType(), "退租审核驳回：" + rentalContract.getTerminationAuditNote());
+        updateById(dbContract);
+        return ApiResult.success("退租申请已驳回，房东可根据意见重新提交");
+    }
+
+    @Override
+    public Result<String> submitTerminateRefund(RentalContract rentalContract) {
+        AssertUtils.notNull(rentalContract, "合同数据不能为空");
+        AssertUtils.notNull(rentalContract.getId(), "合同ID不能为空");
+        AssertUtils.hasText(rentalContract.getTerminationRefundVoucherUrl(), "请上传退押凭证");
+        RentalContract dbContract = getEntityById(rentalContract.getId());
+        AssertUtils.equals(LocalThreadHolder.getUserId(), getLandlordUserId(dbContract.getLandlordId()), "非法操作");
+        AssertUtils.equals(dbContract.getStatus(), RentalContractStatusEnum.STATUS_11.getType(), "当前状态无法提交退押凭证");
+        dbContract.setTerminationRefundVoucherUrl(rentalContract.getTerminationRefundVoucherUrl());
+        dbContract.setTerminationRefundVoucherNote(rentalContract.getTerminationRefundVoucherNote());
+        dbContract.setTerminationRefundTime(LocalDateTime.now());
+        dbContract.setUpdateTime(LocalDateTime.now());
+        dbContract.setTerminationAuditNote(null);
+        updateStatus(dbContract, RentalContractStatusEnum.STATUS_12.getType(), "房东已提交退押凭证，等待管理员审核");
+        updateById(dbContract);
+        return ApiResult.success("退押凭证已提交，等待管理员审核");
+    }
+
+    @Override
+    public Result<String> adminApproveTerminateRefund(Integer id) {
+        AssertUtils.notNull(id, "合同ID不能为空");
+        AssertUtils.equals(LocalThreadHolder.getRoleId(), RoleEnum.ADMIN.getRole(), "非法操作");
+        RentalContract dbContract = getEntityById(id);
+        AssertUtils.equals(dbContract.getStatus(), RentalContractStatusEnum.STATUS_12.getType(), "当前状态无法审核通过");
+        dbContract.setTerminationAuditTime(LocalDateTime.now());
+        dbContract.setUpdateTime(LocalDateTime.now());
+        updateStatus(dbContract, RentalContractStatusEnum.STATUS_13.getType(), "管理员审核通过退押凭证，合同已退租");
+        updateById(dbContract);
+        rentalBillService.cancelPendingBillsByContractId(dbContract.getId());
+        recoverHouseStatusIfNeeded(dbContract.getHouseId());
+        return ApiResult.success("退押凭证审核通过，合同已退租");
+    }
+
+    @Override
+    public Result<String> adminRejectTerminateRefund(RentalContract rentalContract) {
+        AssertUtils.notNull(rentalContract, "合同数据不能为空");
+        AssertUtils.notNull(rentalContract.getId(), "合同ID不能为空");
+        AssertUtils.hasText(rentalContract.getTerminationAuditNote(), "请填写驳回原因");
+        AssertUtils.equals(LocalThreadHolder.getRoleId(), RoleEnum.ADMIN.getRole(), "非法操作");
+        RentalContract dbContract = getEntityById(rentalContract.getId());
+        AssertUtils.equals(dbContract.getStatus(), RentalContractStatusEnum.STATUS_12.getType(), "当前状态无法驳回");
+        dbContract.setTerminationAuditNote(rentalContract.getTerminationAuditNote());
+        dbContract.setTerminationAuditTime(LocalDateTime.now());
+        dbContract.setUpdateTime(LocalDateTime.now());
+        updateStatus(dbContract, RentalContractStatusEnum.STATUS_11.getType(), "退押凭证审核驳回：" + rentalContract.getTerminationAuditNote());
+        updateById(dbContract);
+        return ApiResult.success("退押凭证已驳回，房东可根据意见重新提交");
     }
 
     private RentalContract getEntityById(Integer id) {
@@ -283,5 +413,9 @@ public class RentalContractServiceImpl extends ServiceImpl<RentalContractMapper,
         AssertUtils.isTrue(depositMonths > 0, "押金方式非法");
         rentalContract.setPayCycle(HouseDepositEnum.getDetail(rentalContract.getDepositMethodId()));
         rentalContract.setDepositAmount(rentalContract.getMonthlyRent().multiply(BigDecimal.valueOf(depositMonths)));
+    }
+
+    private BigDecimal defaultAmount(BigDecimal amount) {
+        return amount == null ? BigDecimal.ZERO : amount;
     }
 }

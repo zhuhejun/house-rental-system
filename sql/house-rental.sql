@@ -3847,10 +3847,21 @@ CREATE TABLE `rental_contract`  (
   `utility_payment_mode` int(11) NOT NULL DEFAULT 2 COMMENT '水电费支付方式（1：自行缴费；2：房东结算）',
   `contract_content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL COMMENT '合同内容',
   `attachment_url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL COMMENT '合同附件地址',
-  `status` int(11) NOT NULL COMMENT '合同状态：1待管理员审核 2待租客确认 3待支付押金 4已生效 5已驳回 6已拒绝 7已取消 8已到期',
+  `status` int(11) NOT NULL COMMENT '合同状态：1待管理员审核 2待租客确认 3待支付押金 4已生效 5已驳回 6已拒绝 7已取消 8已到期 9退租申请中 10待管理员审核退租 11待退押 12待审核退押 13已退租',
   `reject_reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '拒绝原因',
   `cancel_reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '取消原因',
+  `termination_reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '退租原因',
+  `termination_apply_user_id` int(11) NULL DEFAULT NULL COMMENT '退租申请人用户ID',
+  `termination_refund_amount` decimal(10, 2) NULL DEFAULT NULL COMMENT '退还押金金额',
+  `termination_voucher_url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL COMMENT '退押凭证',
+  `termination_voucher_note` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '退押备注',
+  `termination_audit_note` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '退租审核备注',
+  `termination_refund_voucher_url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL COMMENT '实际退押凭证',
+  `termination_refund_voucher_note` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '实际退押说明',
   `confirm_time` datetime NULL DEFAULT NULL COMMENT '租客确认时间',
+  `termination_apply_time` datetime NULL DEFAULT NULL COMMENT '退租申请时间',
+  `termination_audit_time` datetime NULL DEFAULT NULL COMMENT '退租审核时间',
+  `termination_refund_time` datetime NULL DEFAULT NULL COMMENT '实际退押时间',
   `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
@@ -3876,6 +3887,17 @@ CREATE TABLE `rental_contract_status`  (
 -- 仅当数据库里已经有旧版本合同数据时，按顺序手动执行一次
 -- ALTER TABLE `rental_contract` ADD COLUMN `deposit_method_id` int(11) NOT NULL DEFAULT 1 COMMENT '押金方式ID' AFTER `monthly_rent`;
 -- UPDATE `rental_contract` SET `deposit_method_id` = 1 WHERE `deposit_method_id` IS NULL;
+-- ALTER TABLE `rental_contract` ADD COLUMN `termination_reason` varchar(255) NULL DEFAULT NULL COMMENT '退租原因' AFTER `cancel_reason`;
+-- ALTER TABLE `rental_contract` ADD COLUMN `termination_apply_user_id` int(11) NULL DEFAULT NULL COMMENT '退租申请人用户ID' AFTER `termination_reason`;
+-- ALTER TABLE `rental_contract` ADD COLUMN `termination_refund_amount` decimal(10,2) NULL DEFAULT NULL COMMENT '退还押金金额' AFTER `termination_apply_user_id`;
+-- ALTER TABLE `rental_contract` ADD COLUMN `termination_voucher_url` text NULL COMMENT '退押凭证' AFTER `termination_refund_amount`;
+-- ALTER TABLE `rental_contract` ADD COLUMN `termination_voucher_note` varchar(255) NULL DEFAULT NULL COMMENT '退押备注' AFTER `termination_voucher_url`;
+-- ALTER TABLE `rental_contract` ADD COLUMN `termination_audit_note` varchar(255) NULL DEFAULT NULL COMMENT '退租审核备注' AFTER `termination_voucher_note`;
+-- ALTER TABLE `rental_contract` ADD COLUMN `termination_refund_voucher_url` text NULL COMMENT '实际退押凭证' AFTER `termination_audit_note`;
+-- ALTER TABLE `rental_contract` ADD COLUMN `termination_refund_voucher_note` varchar(255) NULL DEFAULT NULL COMMENT '实际退押说明' AFTER `termination_refund_voucher_url`;
+-- ALTER TABLE `rental_contract` ADD COLUMN `termination_apply_time` datetime NULL DEFAULT NULL COMMENT '退租申请时间' AFTER `confirm_time`;
+-- ALTER TABLE `rental_contract` ADD COLUMN `termination_audit_time` datetime NULL DEFAULT NULL COMMENT '退租审核时间' AFTER `termination_apply_time`;
+-- ALTER TABLE `rental_contract` ADD COLUMN `termination_refund_time` datetime NULL DEFAULT NULL COMMENT '实际退押时间' AFTER `termination_audit_time`;
 -- 若你使用过旧版押金方式枚举（1押一付一 2押一付二 3押一付三 4押二付三 5押十二付三），
 -- 建议按实际业务手动迁移后再上线新版四种主流方式（1押一付一 2押一付三 3押二付一 4押二付三）：
 -- UPDATE `house` SET `deposit_method_id` = 99 WHERE `deposit_method_id` = 2;

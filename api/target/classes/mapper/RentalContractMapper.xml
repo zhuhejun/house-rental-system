@@ -22,7 +22,18 @@
                rc.status,
                rc.reject_reason,
                rc.cancel_reason,
+               rc.termination_reason,
+               rc.termination_apply_user_id,
+               rc.termination_refund_amount,
+               rc.termination_voucher_url,
+               rc.termination_voucher_note,
+               rc.termination_audit_note,
+               rc.termination_refund_voucher_url,
+               rc.termination_refund_voucher_note,
                rc.confirm_time,
+               rc.termination_apply_time,
+               rc.termination_audit_time,
+               rc.termination_refund_time,
                rc.create_time,
                rc.update_time,
                h.name AS house_name,
@@ -123,7 +134,18 @@
                rc.status,
                rc.reject_reason,
                rc.cancel_reason,
+               rc.termination_reason,
+               rc.termination_apply_user_id,
+               rc.termination_refund_amount,
+               rc.termination_voucher_url,
+               rc.termination_voucher_note,
+               rc.termination_audit_note,
+               rc.termination_refund_voucher_url,
+               rc.termination_refund_voucher_note,
                rc.confirm_time,
+               rc.termination_apply_time,
+               rc.termination_audit_time,
+               rc.termination_refund_time,
                rc.create_time,
                rc.update_time,
                h.name AS house_name,
@@ -142,7 +164,7 @@
         SELECT COUNT(*)
         FROM rental_contract
         WHERE house_id = #{houseId}
-          AND status IN (1, 2, 3, 4)
+          AND status IN (1, 2, 3, 4, 9, 10, 11, 12)
         <if test="excludeId != null">
             AND id != #{excludeId}
         </if>
@@ -174,7 +196,18 @@
         <result column="status" property="status"/>
         <result column="reject_reason" property="rejectReason"/>
         <result column="cancel_reason" property="cancelReason"/>
+        <result column="termination_reason" property="terminationReason"/>
+        <result column="termination_apply_user_id" property="terminationApplyUserId"/>
+        <result column="termination_refund_amount" property="terminationRefundAmount"/>
+        <result column="termination_voucher_url" property="terminationVoucherUrl"/>
+        <result column="termination_voucher_note" property="terminationVoucherNote"/>
+        <result column="termination_audit_note" property="terminationAuditNote"/>
+        <result column="termination_refund_voucher_url" property="terminationRefundVoucherUrl"/>
+        <result column="termination_refund_voucher_note" property="terminationRefundVoucherNote"/>
         <result column="confirm_time" property="confirmTime"/>
+        <result column="termination_apply_time" property="terminationApplyTime"/>
+        <result column="termination_audit_time" property="terminationAuditTime"/>
+        <result column="termination_refund_time" property="terminationRefundTime"/>
         <result column="create_time" property="createTime"/>
         <result column="update_time" property="updateTime"/>
         <result column="house_name" property="houseName"/>

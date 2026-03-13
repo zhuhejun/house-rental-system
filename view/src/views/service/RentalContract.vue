@@ -11,7 +11,12 @@
                     { label: '已驳回', value: '5' },
                     { label: '已拒绝', value: '6' },
                     { label: '已取消', value: '7' },
-                    { label: '已到期', value: '8' }
+                    { label: '已到期', value: '8' },
+                    { label: '退租申请中', value: '9' },
+                    { label: '待退租审核', value: '10' },
+                    { label: '待退押', value: '11' },
+                    { label: '待审核退押', value: '12' },
+                    { label: '已退租', value: '13' }
                 ]" initialActive="null" @change="handleChange" />
             </div>
             <div class="nav-right">
@@ -40,11 +45,14 @@
                 </template>
             </el-table-column>
             <el-table-column prop="createTime" label="发起时间" width="180"></el-table-column>
-            <el-table-column label="操作" width="180">
+            <el-table-column label="操作" width="260">
                 <template #default="scope">
                     <div class="table-actions">
                         <span @click="showDetail(scope.row.id)">详情</span>
-                        <span v-if="[1, 2, 3, 4].includes(scope.row.status)" @click="cancelContract(scope.row)">取消</span>
+                        <span v-if="[1, 2, 3].includes(scope.row.status)" @click="cancelContract(scope.row)">取消</span>
+                        <span v-if="scope.row.status === 4" @click="openTerminateDialog(scope.row)">申请退租</span>
+                        <span v-if="scope.row.status === 9" @click="openSettlementDialog(scope.row)">提交退租审核</span>
+                        <span v-if="scope.row.status === 11" @click="openRefundDialog(scope.row)">上传退押凭证</span>
                     </div>
                 </template>
             </el-table-column>
@@ -136,9 +144,81 @@
                     <div v-if="detail.attachmentUrl"><strong>合同附件：</strong><span class="link" @click="openAttachment(detail.attachmentUrl)">点击查看</span></div>
                     <div v-if="detail.rejectReason"><strong>拒绝原因：</strong>{{ detail.rejectReason }}</div>
                     <div v-if="detail.cancelReason"><strong>取消原因：</strong>{{ detail.cancelReason }}</div>
+                    <div v-if="detail.terminationReason"><strong>退租原因：</strong>{{ detail.terminationReason }}</div>
+                    <div v-if="detail.terminationRefundAmount !== null && detail.terminationRefundAmount !== undefined">
+                        <strong>退还押金：</strong>{{ detail.terminationRefundAmount }}
+                    </div>
+                    <div v-if="detail.terminationVoucherUrl"><strong>协商凭证：</strong><span class="link"
+                            @click="openAttachment(detail.terminationVoucherUrl)">点击查看</span></div>
+                    <div v-if="detail.terminationVoucherNote"><strong>协商备注：</strong>{{ detail.terminationVoucherNote }}</div>
+                    <div v-if="detail.terminationAuditNote"><strong>审核备注：</strong>{{ detail.terminationAuditNote }}</div>
+                    <div v-if="detail.terminationRefundVoucherUrl"><strong>退押凭证：</strong><span class="link"
+                            @click="openAttachment(detail.terminationRefundVoucherUrl)">点击查看</span></div>
+                    <div v-if="detail.terminationRefundVoucherNote"><strong>退押说明：</strong>{{ detail.terminationRefundVoucherNote }}</div>
                 </div>
                 <StatusFlow :status-records="statusList" title="合同状态流转记录" :status-config="contractStatusConfig" />
             </div>
+        </el-dialog>
+
+        <el-dialog title="申请退租" :visible.sync="terminateVisible" width="34%" :close-on-click-modal="false">
+            <div>
+                <p>*退租原因</p>
+                <el-input type="textarea" :rows="4" v-model="terminateForm.terminationReason"
+                    placeholder="请填写退租原因，便于租客和管理员核对"></el-input>
+            </div>
+            <span slot="footer" class="dialog-footer">
+                <span class="primary-bt" @click="terminateVisible = false">取消</span>
+                <span class="info-bt" @click="submitTerminate">提交申请</span>
+            </span>
+        </el-dialog>
+
+        <el-dialog title="提交退租审核" :visible.sync="settlementVisible" width="38%" :close-on-click-modal="false">
+            <div>
+                <p>*退还押金金额</p>
+                <el-input-number v-model="settlementForm.terminationRefundAmount" :min="0" :precision="2" :step="100"
+                    style="width: 100%;"></el-input-number>
+                <p>*协商凭证</p>
+                <div class="upload-tip">支持上传 PDF / JPG / JPEG / PNG，建议上传协商记录或双方确认截图。</div>
+                <el-upload action="http://localhost:21090/api/v1.0/house-rental-api/file/upload"
+                    :show-file-list="false" :on-success="handleSettlementUpload" :before-upload="beforeAttachmentUpload"
+                    accept=".pdf,.jpg,.jpeg,.png">
+                    <span class="primary-bt">上传凭证</span>
+                </el-upload>
+                <div v-if="settlementForm.terminationVoucherUrl" class="uploaded-file"
+                    @click="openAttachment(settlementForm.terminationVoucherUrl)">
+                    已上传凭证，点击查看
+                </div>
+                <p>协商备注</p>
+                <el-input type="textarea" :rows="3" v-model="settlementForm.terminationVoucherNote"
+                    placeholder="填写与租客协商后的退押说明"></el-input>
+            </div>
+            <span slot="footer" class="dialog-footer">
+                <span class="primary-bt" @click="settlementVisible = false">取消</span>
+                <span class="info-bt" @click="submitSettlement">提交审核</span>
+            </span>
+        </el-dialog>
+
+        <el-dialog title="上传退押凭证" :visible.sync="refundVisible" width="38%" :close-on-click-modal="false">
+            <div>
+                <div class="upload-tip">管理员已同意退租，请在完成退款后上传转账截图或退款回执。</div>
+                <p>*退押凭证</p>
+                <el-upload action="http://localhost:21090/api/v1.0/house-rental-api/file/upload"
+                    :show-file-list="false" :on-success="handleRefundUpload" :before-upload="beforeAttachmentUpload"
+                    accept=".pdf,.jpg,.jpeg,.png">
+                    <span class="primary-bt">上传凭证</span>
+                </el-upload>
+                <div v-if="refundForm.terminationRefundVoucherUrl" class="uploaded-file"
+                    @click="openAttachment(refundForm.terminationRefundVoucherUrl)">
+                    已上传凭证，点击查看
+                </div>
+                <p>退押说明</p>
+                <el-input type="textarea" :rows="3" v-model="refundForm.terminationRefundVoucherNote"
+                    placeholder="补充退款时间、方式等说明"></el-input>
+            </div>
+            <span slot="footer" class="dialog-footer">
+                <span class="primary-bt" @click="refundVisible = false">取消</span>
+                <span class="info-bt" @click="submitRefund">确认提交</span>
+            </span>
         </el-dialog>
     </div>
 </template>
@@ -154,6 +234,9 @@ export default {
         return {
             dialogVisible: false,
             detailVisible: false,
+            terminateVisible: false,
+            settlementVisible: false,
+            refundVisible: false,
             apiResult: {
                 data: [],
                 total: 0,
@@ -168,6 +251,21 @@ export default {
             orderOptions: [],
             detail: {},
             statusList: [],
+            terminateForm: {
+                id: null,
+                terminationReason: '',
+            },
+            settlementForm: {
+                id: null,
+                terminationRefundAmount: 0,
+                terminationVoucherUrl: '',
+                terminationVoucherNote: '',
+            },
+            refundForm: {
+                id: null,
+                terminationRefundVoucherUrl: '',
+                terminationRefundVoucherNote: '',
+            },
             depositMethodOptions: [],
             depositMethodTabKey: 0,
             contractStatusConfig: {
@@ -178,7 +276,12 @@ export default {
                 5: { text: "已驳回", icon: "el-icon-close", color: "#F56C6C", status: "error" },
                 6: { text: "已拒绝", icon: "el-icon-close", color: "#F56C6C", status: "error" },
                 7: { text: "已取消", icon: "el-icon-warning", color: "#909399", status: "error" },
-                8: { text: "已到期", icon: "el-icon-finished", color: "#909399", status: "success" }
+                8: { text: "已到期", icon: "el-icon-finished", color: "#909399", status: "success" },
+                9: { text: "退租申请中", icon: "el-icon-warning-outline", color: "#E6A23C", status: "process" },
+                10: { text: "待退租审核", icon: "el-icon-s-check", color: "#409EFF", status: "process" },
+                11: { text: "待退押", icon: "el-icon-money", color: "#E6A23C", status: "process" },
+                12: { text: "待审核退押", icon: "el-icon-s-check", color: "#409EFF", status: "process" },
+                13: { text: "已退租", icon: "el-icon-circle-check", color: "#67C23A", status: "success" }
             }
         };
     },
@@ -207,9 +310,8 @@ export default {
             return (this.contractStatusConfig[status] && this.contractStatusConfig[status].text) || '未知状态';
         },
         statusType(status) {
-            if (status === 4) return 'success';
-            if (status === 3) return 'warning';
-            if (status === 1 || status === 2) return 'warning';
+            if (status === 4 || status === 13) return 'success';
+            if ([1, 2, 3, 9, 10, 11, 12].includes(status)) return 'warning';
             if (status === 5 || status === 6) return 'danger';
             if (status === 7) return 'info';
             return 'info';
@@ -348,6 +450,76 @@ export default {
                     return;
                 }
                 this.$message.error(error.message || '取消失败');
+            }
+        },
+        openTerminateDialog(row) {
+            this.terminateForm = {
+                id: row.id,
+                terminationReason: '',
+            };
+            this.terminateVisible = true;
+        },
+        async submitTerminate() {
+            try {
+                await this.$axios.put('/rental-contract/applyTerminate', this.terminateForm);
+                this.$message.success('退租申请已提交');
+                this.terminateVisible = false;
+                this.refresh();
+            } catch (error) {
+                this.$message.error(error.message || '提交失败');
+            }
+        },
+        openSettlementDialog(row) {
+            this.settlementForm = {
+                id: row.id,
+                terminationRefundAmount: row.depositAmount || 0,
+                terminationVoucherUrl: row.terminationVoucherUrl || '',
+                terminationVoucherNote: row.terminationVoucherNote || '',
+            };
+            this.settlementVisible = true;
+        },
+        handleSettlementUpload(res) {
+            if (res.code === 200) {
+                this.settlementForm.terminationVoucherUrl = res.data;
+                this.$message.success('凭证上传成功');
+            } else {
+                this.$message.error(res.msg || '凭证上传失败');
+            }
+        },
+        async submitSettlement() {
+            try {
+                await this.$axios.put('/rental-contract/submitTerminateSettlement', this.settlementForm);
+                this.$message.success('退租结算已提交管理员审核');
+                this.settlementVisible = false;
+                this.refresh();
+            } catch (error) {
+                this.$message.error(error.message || '提交失败');
+            }
+        },
+        openRefundDialog(row) {
+            this.refundForm = {
+                id: row.id,
+                terminationRefundVoucherUrl: row.terminationRefundVoucherUrl || '',
+                terminationRefundVoucherNote: row.terminationRefundVoucherNote || '',
+            };
+            this.refundVisible = true;
+        },
+        handleRefundUpload(res) {
+            if (res.code === 200) {
+                this.refundForm.terminationRefundVoucherUrl = res.data;
+                this.$message.success('凭证上传成功');
+            } else {
+                this.$message.error(res.msg || '凭证上传失败');
+            }
+        },
+        async submitRefund() {
+            try {
+                await this.$axios.put('/rental-contract/submitTerminateRefund', this.refundForm);
+                this.$message.success('退押凭证已提交，合同已退租');
+                this.refundVisible = false;
+                this.refresh();
+            } catch (error) {
+                this.$message.error(error.message || '提交失败');
             }
         }
     }

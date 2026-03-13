@@ -59,8 +59,33 @@ public class RentalContract {
 
     private String cancelReason;
 
+    private String terminationReason;
+
+    private Integer terminationApplyUserId;
+
+    private BigDecimal terminationRefundAmount;
+
+    private String terminationVoucherUrl;
+
+    private String terminationVoucherNote;
+
+    private String terminationAuditNote;
+
+    private String terminationRefundVoucherUrl;
+
+    private String terminationRefundVoucherNote;
+
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime confirmTime;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime terminationApplyTime;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime terminationAuditTime;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime terminationRefundTime;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createTime;

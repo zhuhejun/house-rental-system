@@ -9,7 +9,12 @@
                     { label: '已生效', value: '4' },
                     { label: '已拒绝', value: '6' },
                     { label: '已取消', value: '7' },
-                    { label: '已到期', value: '8' }
+                    { label: '已到期', value: '8' },
+                    { label: '退租申请中', value: '9' },
+                    { label: '待退租审核', value: '10' },
+                    { label: '待退押', value: '11' },
+                    { label: '待审核退押', value: '12' },
+                    { label: '已退租', value: '13' }
                 ]" initialActive="null" @change="handleChange" />
             </div>
             <div class="nav-right">
@@ -32,13 +37,14 @@
                     <el-tag :type="statusType(scope.row.status)" size="mini">{{ statusText(scope.row.status) }}</el-tag>
                 </template>
             </el-table-column>
-            <el-table-column label="操作" width="220">
+            <el-table-column label="操作" width="280">
                 <template #default="scope">
                     <div class="table-actions">
                         <span @click="showDetail(scope.row.id)">详情</span>
                         <span v-if="scope.row.status === 2" @click="confirmContract(scope.row.id)">确认</span>
                         <span v-if="scope.row.status === 2" @click="rejectContract(scope.row.id)">拒绝</span>
                         <span v-if="scope.row.status === 3" @click="goPayDeposit()">去支付押金</span>
+                        <span v-if="scope.row.status === 4" @click="openTerminateDialog(scope.row)">申请退租</span>
                     </div>
                 </template>
             </el-table-column>
@@ -67,9 +73,32 @@
                     <div v-if="detail.attachmentUrl"><strong>合同附件：</strong><span class="link" @click="openAttachment(detail.attachmentUrl)">点击查看</span></div>
                     <div v-if="detail.rejectReason"><strong>拒绝原因：</strong>{{ detail.rejectReason }}</div>
                     <div v-if="detail.cancelReason"><strong>取消原因：</strong>{{ detail.cancelReason }}</div>
+                    <div v-if="detail.terminationReason"><strong>退租原因：</strong>{{ detail.terminationReason }}</div>
+                    <div v-if="detail.terminationRefundAmount !== null && detail.terminationRefundAmount !== undefined">
+                        <strong>退还押金：</strong>{{ detail.terminationRefundAmount }}
+                    </div>
+                    <div v-if="detail.terminationVoucherUrl"><strong>协商凭证：</strong><span class="link"
+                            @click="openAttachment(detail.terminationVoucherUrl)">点击查看</span></div>
+                    <div v-if="detail.terminationVoucherNote"><strong>协商备注：</strong>{{ detail.terminationVoucherNote }}</div>
+                    <div v-if="detail.terminationAuditNote"><strong>审核备注：</strong>{{ detail.terminationAuditNote }}</div>
+                    <div v-if="detail.terminationRefundVoucherUrl"><strong>退押凭证：</strong><span class="link"
+                            @click="openAttachment(detail.terminationRefundVoucherUrl)">点击查看</span></div>
+                    <div v-if="detail.terminationRefundVoucherNote"><strong>退押说明：</strong>{{ detail.terminationRefundVoucherNote }}</div>
                 </div>
                 <StatusFlow :status-records="statusList" title="合同状态流转记录" :status-config="contractStatusConfig" />
             </div>
+        </el-dialog>
+
+        <el-dialog title="申请退租" :visible.sync="terminateVisible" width="34%" :close-on-click-modal="false">
+            <div>
+                <p>*退租原因</p>
+                <el-input type="textarea" :rows="4" v-model="terminateForm.terminationReason"
+                    placeholder="请填写退租原因"></el-input>
+            </div>
+            <span slot="footer" class="dialog-footer">
+                <span class="primary-bt" @click="terminateVisible = false">取消</span>
+                <span class="info-bt" @click="submitTerminate">提交申请</span>
+            </span>
         </el-dialog>
     </div>
 </template>
@@ -94,15 +123,25 @@ export default {
                 status: null,
             },
             detailVisible: false,
+            terminateVisible: false,
             detail: {},
             statusList: [],
+            terminateForm: {
+                id: null,
+                terminationReason: '',
+            },
             contractStatusConfig: {
                 2: { text: "待租客确认", icon: "el-icon-time", color: "#409EFF", status: "process" },
                 3: { text: "待支付押金", icon: "el-icon-wallet", color: "#E6A23C", status: "process" },
                 4: { text: "已生效", icon: "el-icon-success", color: "#67C23A", status: "success" },
                 6: { text: "已拒绝", icon: "el-icon-close", color: "#F56C6C", status: "error" },
                 7: { text: "已取消", icon: "el-icon-warning", color: "#909399", status: "error" },
-                8: { text: "已到期", icon: "el-icon-finished", color: "#909399", status: "success" }
+                8: { text: "已到期", icon: "el-icon-finished", color: "#909399", status: "success" },
+                9: { text: "退租申请中", icon: "el-icon-warning-outline", color: "#E6A23C", status: "process" },
+                10: { text: "待退租审核", icon: "el-icon-s-check", color: "#409EFF", status: "process" },
+                11: { text: "待退押", icon: "el-icon-money", color: "#E6A23C", status: "process" },
+                12: { text: "待审核退押", icon: "el-icon-s-check", color: "#409EFF", status: "process" },
+                13: { text: "已退租", icon: "el-icon-circle-check", color: "#67C23A", status: "success" }
             }
         };
     },
@@ -114,9 +153,8 @@ export default {
             return (this.contractStatusConfig[status] && this.contractStatusConfig[status].text) || '未知状态';
         },
         statusType(status) {
-            if (status === 4) return 'success';
-            if (status === 3) return 'warning';
-            if (status === 2) return 'warning';
+            if (status === 4 || status === 13) return 'success';
+            if ([2, 3, 9, 10, 11, 12].includes(status)) return 'warning';
             if (status === 6) return 'danger';
             if (status === 7) return 'info';
             return 'info';
@@ -203,6 +241,23 @@ export default {
         },
         goPayDeposit() {
             this.$router.push('/my-rental-bill');
+        },
+        openTerminateDialog(row) {
+            this.terminateForm = {
+                id: row.id,
+                terminationReason: '',
+            };
+            this.terminateVisible = true;
+        },
+        async submitTerminate() {
+            try {
+                await this.$axios.put('/rental-contract/applyTerminate', this.terminateForm);
+                this.$message.success('退租申请已提交');
+                this.terminateVisible = false;
+                this.fetchFreshData();
+            } catch (error) {
+                this.$message.error(error.message || '提交失败');
+            }
         }
     }
 }

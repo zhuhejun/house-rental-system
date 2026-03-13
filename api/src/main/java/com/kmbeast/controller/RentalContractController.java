@@ -63,6 +63,48 @@ public class RentalContractController {
         return rentalContractService.cancel(rentalContract);
     }
 
+    @PutMapping(value = "/applyTerminate")
+    @ResponseBody
+    public Result<String> applyTerminate(@RequestBody RentalContract rentalContract) {
+        return rentalContractService.applyTerminate(rentalContract);
+    }
+
+    @PutMapping(value = "/submitTerminateSettlement")
+    @ResponseBody
+    public Result<String> submitTerminateSettlement(@RequestBody RentalContract rentalContract) {
+        return rentalContractService.submitTerminateSettlement(rentalContract);
+    }
+
+    @PutMapping(value = "/adminApproveTerminate/{id}")
+    @ResponseBody
+    public Result<String> adminApproveTerminate(@PathVariable Integer id) {
+        return rentalContractService.adminApproveTerminate(id);
+    }
+
+    @PutMapping(value = "/adminRejectTerminate")
+    @ResponseBody
+    public Result<String> adminRejectTerminate(@RequestBody RentalContract rentalContract) {
+        return rentalContractService.adminRejectTerminate(rentalContract);
+    }
+
+    @PutMapping(value = "/submitTerminateRefund")
+    @ResponseBody
+    public Result<String> submitTerminateRefund(@RequestBody RentalContract rentalContract) {
+        return rentalContractService.submitTerminateRefund(rentalContract);
+    }
+
+    @PutMapping(value = "/adminApproveTerminateRefund/{id}")
+    @ResponseBody
+    public Result<String> adminApproveTerminateRefund(@PathVariable Integer id) {
+        return rentalContractService.adminApproveTerminateRefund(id);
+    }
+
+    @PutMapping(value = "/adminRejectTerminateRefund")
+    @ResponseBody
+    public Result<String> adminRejectTerminateRefund(@RequestBody RentalContract rentalContract) {
+        return rentalContractService.adminRejectTerminateRefund(rentalContract);
+    }
+
     @Pager
     @PostMapping(value = "/listUser")
     @ResponseBody
