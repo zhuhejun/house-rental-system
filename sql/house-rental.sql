@@ -3847,7 +3847,7 @@ CREATE TABLE `rental_contract`  (
   `utility_payment_mode` int(11) NOT NULL DEFAULT 2 COMMENT '水电费支付方式（1：自行缴费；2：房东结算）',
   `contract_content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL COMMENT '合同内容',
   `attachment_url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL COMMENT '合同附件地址',
-  `status` int(11) NOT NULL COMMENT '合同状态：1待管理员审核 2待租客确认 3待支付押金 4已生效 5已驳回 6已拒绝 7已取消 8已到期 9退租申请中 10待管理员审核退租 11待退押 12待审核退押 13已退租',
+  `status` int(11) NOT NULL COMMENT '合同状态：1待管理员审核 2待租客确认 3待支付押金 4已生效 5已驳回 6已拒绝 7已取消 8已到期 9退租申请中 10待退租审核 11待退押 12待审核退押 13已退租',
   `reject_reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '拒绝原因',
   `cancel_reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '取消原因',
   `termination_reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '退租原因',

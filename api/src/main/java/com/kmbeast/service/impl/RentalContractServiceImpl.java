@@ -92,8 +92,7 @@ public class RentalContractServiceImpl extends ServiceImpl<RentalContractMapper,
 
     @Override
     public Result<List<RentalContractVO>> listLandlord(RentalContractQueryDto queryDto) {
-        LandlordVO landlord = getLandlord();
-        queryDto.setLandlordId(landlord.getId());
+        queryDto.setLandlordUserId(LocalThreadHolder.getUserId());
         return list(queryDto);
     }
 
@@ -238,9 +237,9 @@ public class RentalContractServiceImpl extends ServiceImpl<RentalContractMapper,
         dbContract.setTerminationVoucherUrl(rentalContract.getTerminationVoucherUrl());
         dbContract.setTerminationVoucherNote(rentalContract.getTerminationVoucherNote());
         dbContract.setUpdateTime(LocalDateTime.now());
-        updateStatus(dbContract, RentalContractStatusEnum.STATUS_10.getType(), "房东已提交退租结算凭证");
+        updateStatus(dbContract, RentalContractStatusEnum.STATUS_10.getType(), "房东已提交退租结算，进入待退租审核");
         updateById(dbContract);
-        return ApiResult.success("退租结算已提交，等待管理员审核");
+        return ApiResult.success("退租结算已提交，当前状态为待退租审核");
     }
 
     @Override
@@ -251,9 +250,9 @@ public class RentalContractServiceImpl extends ServiceImpl<RentalContractMapper,
         AssertUtils.equals(dbContract.getStatus(), RentalContractStatusEnum.STATUS_10.getType(), "当前状态无法审核通过");
         dbContract.setTerminationAuditTime(LocalDateTime.now());
         dbContract.setUpdateTime(LocalDateTime.now());
-        updateStatus(dbContract, RentalContractStatusEnum.STATUS_11.getType(), "管理员审核通过，等待房东退还押金");
+        updateStatus(dbContract, RentalContractStatusEnum.STATUS_11.getType(), "退租审核通过，进入待退押");
         updateById(dbContract);
-        return ApiResult.success("退租已审核通过，等待房东退还押金");
+        return ApiResult.success("退租已审核通过，当前状态为待退押");
     }
 
     @Override
@@ -285,9 +284,9 @@ public class RentalContractServiceImpl extends ServiceImpl<RentalContractMapper,
         dbContract.setTerminationRefundTime(LocalDateTime.now());
         dbContract.setUpdateTime(LocalDateTime.now());
         dbContract.setTerminationAuditNote(null);
-        updateStatus(dbContract, RentalContractStatusEnum.STATUS_12.getType(), "房东已提交退押凭证，等待管理员审核");
+        updateStatus(dbContract, RentalContractStatusEnum.STATUS_12.getType(), "房东已提交退押凭证，进入待审核退押");
         updateById(dbContract);
-        return ApiResult.success("退押凭证已提交，等待管理员审核");
+        return ApiResult.success("退押凭证已提交，当前状态为待审核退押");
     }
 
     @Override

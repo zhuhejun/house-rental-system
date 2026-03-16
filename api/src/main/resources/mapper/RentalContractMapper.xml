@@ -57,6 +57,9 @@
             <if test="landlordId != null">
                 AND rc.landlord_id = #{landlordId}
             </if>
+            <if test="landlordUserId != null">
+                AND l.user_id = #{landlordUserId}
+            </if>
             <if test="tenantUserId != null">
                 AND rc.tenant_user_id = #{tenantUserId}
             </if>
@@ -83,6 +86,7 @@
         SELECT COUNT(*)
         FROM rental_contract rc
         LEFT JOIN house h ON h.id = rc.house_id
+        LEFT JOIN landlord l ON l.id = rc.landlord_id
         LEFT JOIN user tu ON tu.id = rc.tenant_user_id
         <where>
             <if test="keyword != null and keyword != ''">
@@ -95,6 +99,9 @@
             </if>
             <if test="landlordId != null">
                 AND rc.landlord_id = #{landlordId}
+            </if>
+            <if test="landlordUserId != null">
+                AND l.user_id = #{landlordUserId}
             </if>
             <if test="tenantUserId != null">
                 AND rc.tenant_user_id = #{tenantUserId}

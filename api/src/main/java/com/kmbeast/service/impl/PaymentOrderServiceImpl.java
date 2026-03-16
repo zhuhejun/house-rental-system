@@ -1,6 +1,7 @@
 package com.kmbeast.service.impl;
 
 import com.alibaba.fastjson2.JSON;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kmbeast.context.LocalThreadHolder;
 import com.kmbeast.mapper.HouseMapper;
@@ -178,22 +179,28 @@ public class PaymentOrderServiceImpl extends ServiceImpl<PaymentOrderMapper, Pay
     private void activateContractAfterDeposit(RentalBill rentalBill, Integer operatorId) {
         RentalContract rentalContract = rentalContractMapper.selectById(rentalBill.getContractId());
         AssertUtils.notNull(rentalContract, "合同不存在");
-        if (!Objects.equals(rentalContract.getStatus(), RentalContractStatusEnum.STATUS_3.getType())) {
+        LocalDateTime now = LocalDateTime.now();
+        LambdaUpdateWrapper<RentalContract> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.eq(RentalContract::getId, rentalContract.getId())
+                .eq(RentalContract::getStatus, RentalContractStatusEnum.STATUS_3.getType())
+                .set(RentalContract::getStatus, RentalContractStatusEnum.STATUS_4.getType())
+                .set(RentalContract::getUpdateTime, now);
+        int updated = rentalContractMapper.update(null, updateWrapper);
+        if (updated <= 0) {
             return;
         }
 
         RentalContractStatus rentalContractStatus = new RentalContractStatus();
-        rentalContractStatus.setOriginStatus(rentalContract.getStatus());
+        rentalContractStatus.setOriginStatus(RentalContractStatusEnum.STATUS_3.getType());
         rentalContractStatus.setNewId(RentalContractStatusEnum.STATUS_4.getType());
         rentalContractStatus.setRentalContractId(rentalContract.getId());
         rentalContractStatus.setOperatorId(operatorId);
         rentalContractStatus.setNote("押金支付成功，合同正式生效");
-        rentalContractStatus.setCreateTime(LocalDateTime.now());
+        rentalContractStatus.setCreateTime(now);
         rentalContractStatusMapper.insert(rentalContractStatus);
 
         rentalContract.setStatus(RentalContractStatusEnum.STATUS_4.getType());
-        rentalContract.setUpdateTime(LocalDateTime.now());
-        rentalContractMapper.updateById(rentalContract);
+        rentalContract.setUpdateTime(now);
 
         House house = houseMapper.selectById(rentalContract.getHouseId());
         if (house != null) {

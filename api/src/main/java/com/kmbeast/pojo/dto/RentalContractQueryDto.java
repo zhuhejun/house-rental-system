@@ -14,6 +14,8 @@ public class RentalContractQueryDto extends QueryDto {
 
     private Integer landlordId;
 
+    private Integer landlordUserId;
+
     private Integer tenantUserId;
 
     private Integer houseId;

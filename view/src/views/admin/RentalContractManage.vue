@@ -69,8 +69,6 @@ import AutoInput from "@/components/AutoInput.vue";
 import Tab from "@/components/Tab.vue";
 import StatusFlow from "@/components/StatusFlow.vue";
 
-const CONTRACT_STATUSES = [1, 2, 3, 4, 5, 6, 7, 8];
-
 export default {
     components: { AutoInput, Tab, StatusFlow },
     data() {
@@ -108,7 +106,12 @@ export default {
                 5: { text: "已驳回", icon: "el-icon-close", color: "#F56C6C", status: "error" },
                 6: { text: "已拒绝", icon: "el-icon-close", color: "#F56C6C", status: "error" },
                 7: { text: "已取消", icon: "el-icon-warning", color: "#909399", status: "error" },
-                8: { text: "已到期", icon: "el-icon-finished", color: "#909399", status: "success" }
+                8: { text: "已到期", icon: "el-icon-finished", color: "#909399", status: "success" },
+                9: { text: "退租申请中", icon: "el-icon-document-remove", color: "#E6A23C", status: "process" },
+                10: { text: "待退租审核", icon: "el-icon-s-check", color: "#409EFF", status: "process" },
+                11: { text: "待退押", icon: "el-icon-money", color: "#E6A23C", status: "process" },
+                12: { text: "待审核退押", icon: "el-icon-s-order", color: "#409EFF", status: "process" },
+                13: { text: "已退租", icon: "el-icon-circle-close", color: "#909399", status: "success" }
             }
         };
     },
@@ -117,6 +120,9 @@ export default {
     },
     methods: {
         statusText(status) {
+            if (status === 13) {
+                return '已取消';
+            }
             return (this.contractStatusConfig[status] && this.contractStatusConfig[status].text) || '未知状态';
         },
         statusType(status) {
@@ -163,9 +169,13 @@ export default {
         },
         applyFilters() {
             const keyword = (this.queryDto.keyword || '').trim().toLowerCase();
-            let list = this.rawList.filter(item => CONTRACT_STATUSES.includes(item.status));
+            let list = [...this.rawList].filter(item => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].includes(item.status));
             if (this.queryDto.status !== null) {
-                list = list.filter(item => item.status === this.queryDto.status);
+                if (this.queryDto.status === 7) {
+                    list = list.filter(item => [7, 13].includes(item.status));
+                } else {
+                    list = list.filter(item => item.status === this.queryDto.status);
+                }
             }
             if (keyword) {
                 list = list.filter(item => {

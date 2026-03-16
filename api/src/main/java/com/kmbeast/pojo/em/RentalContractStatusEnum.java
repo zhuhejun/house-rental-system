@@ -19,7 +19,7 @@ public enum RentalContractStatusEnum {
     STATUS_7(7, "已取消"),
     STATUS_8(8, "已到期"),
     STATUS_9(9, "退租申请中"),
-    STATUS_10(10, "待管理员审核退租"),
+    STATUS_10(10, "待退租审核"),
     STATUS_11(11, "待退押"),
     STATUS_12(12, "待审核退押"),
     STATUS_13(13, "已退租");
