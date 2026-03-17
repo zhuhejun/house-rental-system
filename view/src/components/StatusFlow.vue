@@ -1,16 +1,13 @@
 <template>
     <div class="status-flow-container">
         <div class="status-title">{{ title }}</div>
-        <div v-if="statusRecords.length === 0">
+        <div v-if="normalizedSteps.length === 0">
             <el-empty description="暂无状态流转路径"></el-empty>
         </div>
         <el-steps direction="vertical" :active="activeStep" :process-status="processStatus" :space="100">
-            <div v-for="(record, index) in statusRecords" :key="'record-' + index" class="status-record">
-                <el-step :title="getStatusText(record.originStatus)" :description="formatTime(record.createTime)"
-                    :icon="getStatusIcon(record.originStatus)" :status="getStepStatus(record.originStatus)"></el-step>
-                <el-step :title="getStatusText(record.newId)" :description="formatTime(record.createTime)"
-                    :icon="getStatusIcon(record.newId)" :status="getStepStatus(record.newId)"></el-step>
-            </div>
+            <el-step v-for="(step, index) in normalizedSteps" :key="'step-' + index" :title="getStatusText(step.status)"
+                :description="formatTime(step.createTime)" :icon="getStatusIcon(step.status)"
+                :status="getStepStatus(step.status)"></el-step>
         </el-steps>
     </div>
 </template>
@@ -51,15 +48,39 @@ export default {
     },
     computed: {
         activeStep() {
-            return this.statusRecords.length ? this.statusRecords.length * 2 - 1 : 0
+            return this.normalizedSteps.length ? this.normalizedSteps.length - 1 : 0
         },
         processStatus() {
-            if (!this.statusRecords.length) return 'wait'
-            const lastStatus = this.statusRecords[this.statusRecords.length - 1].newId
+            if (!this.normalizedSteps.length) return 'wait'
+            const lastStatus = this.normalizedSteps[this.normalizedSteps.length - 1].status
             return this.getStepStatus(lastStatus)
         },
         currentStatusConfig() {
             return this.statusConfig || this.defaultStatusConfig
+        },
+        normalizedSteps() {
+            if (!this.statusRecords.length) return []
+            const steps = []
+
+            this.statusRecords.forEach(record => {
+                const currentTime = record.createTime
+                if (!steps.length || steps[steps.length - 1].status !== record.originStatus) {
+                    steps.push({
+                        status: record.originStatus,
+                        createTime: currentTime
+                    })
+                }
+                if (steps[steps.length - 1].status !== record.newId) {
+                    steps.push({
+                        status: record.newId,
+                        createTime: currentTime
+                    })
+                } else {
+                    steps[steps.length - 1].createTime = currentTime
+                }
+            })
+
+            return steps
         }
     },
     methods: {
@@ -85,10 +106,6 @@ export default {
             return (this.currentStatusConfig[status] && this.currentStatusConfig[status].icon) || "el-icon-info"
         },
 
-        getStatusColor(status) {
-            return (this.currentStatusConfig[status] && this.currentStatusConfig[status].color) || "#909399"
-        },
-
         getStepStatus(status) {
             return (this.currentStatusConfig[status] && this.currentStatusConfig[status].status) || "wait"
         }
@@ -112,15 +129,6 @@ export default {
         padding-left: 10px;
         border-left: 4px solid #409EFF;
     }
-
-    .status-record {
-        margin-bottom: 10px;
-
-        &:last-child {
-            margin-bottom: 0;
-        }
-    }
-
     ::v-deep {
         .el-step {
             &__head {
