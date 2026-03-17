@@ -27,6 +27,8 @@ public class PaymentOrder {
 
     private Integer rentalBillId;
 
+    private Integer repairOrderId;
+
     private Integer contractId;
 
     private Integer landlordId;

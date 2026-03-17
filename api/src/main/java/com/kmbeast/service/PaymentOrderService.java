@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.kmbeast.pojo.api.Result;
 import com.kmbeast.pojo.entity.PaymentOrder;
 import com.kmbeast.pojo.vo.PaymentStartVO;
+import com.kmbeast.pojo.vo.RepairOrderVO;
 import com.kmbeast.pojo.vo.RentalBillVO;
 
 import java.util.Map;
@@ -15,7 +16,11 @@ public interface PaymentOrderService extends IService<PaymentOrder> {
 
     Result<PaymentStartVO> createPagePay(Integer billId);
 
+    Result<PaymentStartVO> createRepairPagePay(Integer repairOrderId);
+
     String handleNotify(Map<String, String> params);
 
     Result<RentalBillVO> queryBillStatus(Integer billId);
+
+    Result<RepairOrderVO> queryRepairStatus(Integer repairOrderId);
 }

@@ -220,6 +220,7 @@ export default {
                 { path: '/my-rental-contract', icon: 'el-icon-document', title: '我的合同' },
                 { path: '/my-rental-termination', icon: 'el-icon-switch-button', title: '退租管理' },
                 { path: '/my-rental-bill', icon: 'el-icon-wallet', title: '我的账单' },
+                { path: '/my-repair-order', icon: 'el-icon-s-tools', title: '我的报修' },
                 { path: '/notice-list', icon: '', title: '系统公告' },
                 { path: '/my-save', icon: '', title: '我的收藏' },
             ],

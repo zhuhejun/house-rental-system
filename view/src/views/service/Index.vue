@@ -30,6 +30,7 @@
                     <div @click="select('4')"><i class="el-icon-document"></i>租赁合同</div>
                     <div @click="select('5')"><i class="el-icon-switch-button"></i>退租管理</div>
                     <div @click="select('6')"><i class="el-icon-wallet"></i>租赁账单</div>
+                    <div @click="select('7')"><i class="el-icon-s-tools"></i>报修管理</div>
                 </div>
             </div>
             <div class="right">
@@ -63,7 +64,8 @@ export default {
                 '3': 'house-order-info',
                 '4': 'rental-contract',
                 '5': 'rental-termination',
-                '6': 'rental-bill'
+                '6': 'rental-bill',
+                '7': 'repair-order'
             }
             this.$router.push(`/service-center/${pathsMap[index]}`);
         },

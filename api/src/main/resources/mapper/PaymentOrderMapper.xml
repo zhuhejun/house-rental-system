@@ -11,6 +11,15 @@
         LIMIT 1
     </select>
 
+    <select id="selectPendingByRepairOrderId" resultType="com.kmbeast.pojo.entity.PaymentOrder">
+        SELECT *
+        FROM payment_order
+        WHERE repair_order_id = #{repairOrderId}
+          AND status = 1
+        ORDER BY id DESC
+        LIMIT 1
+    </select>
+
     <select id="selectByOutTradeNo" resultType="com.kmbeast.pojo.entity.PaymentOrder">
         SELECT *
         FROM payment_order

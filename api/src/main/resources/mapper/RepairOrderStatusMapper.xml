@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kmbeast.mapper.RepairOrderStatusMapper">
+
+    <select id="list" resultMap="BaseResultMap">
+        SELECT id,
+               origin_status,
+               new_id,
+               repair_order_id,
+               operator_id,
+               note,
+               create_time
+        FROM repair_order_status
+        <where>
+            <if test="repairOrderId != null">
+                AND repair_order_id = #{repairOrderId}
+            </if>
+        </where>
+        ORDER BY id ASC
+        <if test="current != null and size != null">
+            LIMIT #{current},#{size}
+        </if>
+    </select>
+
+    <select id="listCount" resultType="integer">
+        SELECT COUNT(*)
+        FROM repair_order_status
+        <where>
+            <if test="repairOrderId != null">
+                AND repair_order_id = #{repairOrderId}
+            </if>
+        </where>
+    </select>
+
+    <resultMap id="BaseResultMap" type="com.kmbeast.pojo.vo.RepairOrderStatusVO">
+        <id column="id" property="id"/>
+        <result column="origin_status" property="originStatus"/>
+        <result column="new_id" property="newId"/>
+        <result column="repair_order_id" property="repairOrderId"/>
+        <result column="operator_id" property="operatorId"/>
+        <result column="note" property="note"/>
+        <result column="create_time" property="createTime"/>
+    </resultMap>
+
+</mapper>

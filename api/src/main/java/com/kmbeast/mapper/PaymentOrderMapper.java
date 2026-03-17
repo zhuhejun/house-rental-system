@@ -13,5 +13,7 @@ public interface PaymentOrderMapper extends BaseMapper<PaymentOrder> {
 
     PaymentOrder selectPendingByBillId(@Param(value = "rentalBillId") Integer rentalBillId);
 
+    PaymentOrder selectPendingByRepairOrderId(@Param(value = "repairOrderId") Integer repairOrderId);
+
     PaymentOrder selectByOutTradeNo(@Param(value = "outTradeNo") String outTradeNo);
 }

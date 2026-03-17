@@ -2,6 +2,7 @@ package com.kmbeast.controller;
 
 import com.kmbeast.pojo.api.Result;
 import com.kmbeast.pojo.vo.PaymentStartVO;
+import com.kmbeast.pojo.vo.RepairOrderVO;
 import com.kmbeast.pojo.vo.RentalBillVO;
 import com.kmbeast.service.PaymentOrderService;
 import org.springframework.web.bind.annotation.*;
@@ -27,10 +28,22 @@ public class PaymentOrderController {
         return paymentOrderService.createPagePay(billId);
     }
 
+    @PostMapping(value = "/payRepair/{repairOrderId}")
+    @ResponseBody
+    public Result<PaymentStartVO> payRepair(@PathVariable Integer repairOrderId) {
+        return paymentOrderService.createRepairPagePay(repairOrderId);
+    }
+
     @GetMapping(value = "/queryBillStatus/{billId}")
     @ResponseBody
     public Result<RentalBillVO> queryBillStatus(@PathVariable Integer billId) {
         return paymentOrderService.queryBillStatus(billId);
+    }
+
+    @GetMapping(value = "/queryRepairStatus/{repairOrderId}")
+    @ResponseBody
+    public Result<RepairOrderVO> queryRepairStatus(@PathVariable Integer repairOrderId) {
+        return paymentOrderService.queryRepairStatus(repairOrderId);
     }
 
     @PostMapping(value = "/notify")

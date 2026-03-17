@@ -3950,7 +3950,8 @@ DROP TABLE IF EXISTS `payment_order`;
 CREATE TABLE `payment_order`  (
   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '支付订单主键ID',
   `order_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '站内支付单号',
-  `rental_bill_id` int(11) NOT NULL COMMENT '账单ID',
+  `rental_bill_id` int(11) NULL DEFAULT NULL COMMENT '账单ID',
+  `repair_order_id` int(11) NULL DEFAULT NULL COMMENT '报修工单ID',
   `contract_id` int(11) NOT NULL COMMENT '合同ID',
   `landlord_id` int(11) NOT NULL COMMENT '房东ID',
   `tenant_user_id` int(11) NOT NULL COMMENT '租客用户ID',
@@ -3966,5 +3967,60 @@ CREATE TABLE `payment_order`  (
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin COMMENT = '支付订单表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for repair_order
+-- ----------------------------
+DROP TABLE IF EXISTS `repair_order`;
+CREATE TABLE `repair_order`  (
+  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '报修工单主键ID',
+  `repair_no` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '报修工单编号',
+  `contract_id` int(11) NOT NULL COMMENT '合同ID',
+  `house_id` int(11) NOT NULL COMMENT '房源ID',
+  `landlord_id` int(11) NOT NULL COMMENT '房东ID',
+  `tenant_user_id` int(11) NOT NULL COMMENT '租客用户ID',
+  `title` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '报修标题',
+  `repair_type` int(11) NOT NULL COMMENT '报修类型',
+  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '问题描述',
+  `is_urgent` int(11) NOT NULL DEFAULT 0 COMMENT '是否紧急（0：普通；1：紧急）',
+  `expect_visit_time` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '期望上门时间',
+  `attachment_url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL COMMENT '现场附件',
+  `status` int(11) NOT NULL DEFAULT 1 COMMENT '工单状态（1：待处理；2：已受理；3：处理中；4：待租户确认；5：已完成；6：已取消；7：已驳回）',
+  `handle_note` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL COMMENT '处理结果',
+  `handle_voucher_url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL COMMENT '处理凭证',
+  `repair_amount` decimal(10, 2) NOT NULL DEFAULT 0.00 COMMENT '维修费用',
+  `payment_status` int(11) NOT NULL DEFAULT 3 COMMENT '支付状态（1：待支付；2：已支付；3：无需支付）',
+  `cancel_reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '取消原因',
+  `reject_reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '驳回原因',
+  `accept_time` datetime NULL DEFAULT NULL COMMENT '受理时间',
+  `finish_time` datetime NULL DEFAULT NULL COMMENT '房东提交处理结果时间',
+  `tenant_confirm_time` datetime NULL DEFAULT NULL COMMENT '租户确认完成时间',
+  `paid_time` datetime NULL DEFAULT NULL COMMENT '维修费用支付时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin COMMENT = '报修工单表' ROW_FORMAT = Dynamic;
+
+-- 报修支付增量 SQL（已有库请单独执行，不要重跑整份文件）
+-- ALTER TABLE `repair_order` ADD COLUMN `repair_amount` decimal(10, 2) NOT NULL DEFAULT 0.00 COMMENT '维修费用' AFTER `handle_voucher_url`;
+-- ALTER TABLE `repair_order` ADD COLUMN `payment_status` int(11) NOT NULL DEFAULT 3 COMMENT '支付状态（1：待支付；2：已支付；3：无需支付）' AFTER `repair_amount`;
+-- ALTER TABLE `repair_order` ADD COLUMN `paid_time` datetime NULL DEFAULT NULL COMMENT '维修费用支付时间' AFTER `tenant_confirm_time`;
+-- ALTER TABLE `payment_order` MODIFY COLUMN `rental_bill_id` int(11) NULL DEFAULT NULL COMMENT '账单ID';
+-- ALTER TABLE `payment_order` ADD COLUMN `repair_order_id` int(11) NULL DEFAULT NULL COMMENT '报修工单ID' AFTER `rental_bill_id`;
+
+-- ----------------------------
+-- Table structure for repair_order_status
+-- ----------------------------
+DROP TABLE IF EXISTS `repair_order_status`;
+CREATE TABLE `repair_order_status`  (
+  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '报修工单状态流转主键ID',
+  `origin_status` int(11) NOT NULL COMMENT '原状态',
+  `new_id` int(11) NOT NULL COMMENT '新状态',
+  `repair_order_id` int(11) NOT NULL COMMENT '报修工单ID',
+  `operator_id` int(11) NOT NULL COMMENT '操作人ID',
+  `note` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '备注',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin COMMENT = '报修工单状态流转表' ROW_FORMAT = Dynamic;
 
 SET FOREIGN_KEY_CHECKS = 1;

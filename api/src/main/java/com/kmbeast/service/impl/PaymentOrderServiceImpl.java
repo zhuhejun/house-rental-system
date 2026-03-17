@@ -7,6 +7,7 @@ import com.kmbeast.context.LocalThreadHolder;
 import com.kmbeast.mapper.HouseMapper;
 import com.kmbeast.mapper.LandlordMapper;
 import com.kmbeast.mapper.PaymentOrderMapper;
+import com.kmbeast.mapper.RepairOrderMapper;
 import com.kmbeast.mapper.RentalBillMapper;
 import com.kmbeast.mapper.RentalContractMapper;
 import com.kmbeast.mapper.RentalContractStatusMapper;
@@ -14,6 +15,8 @@ import com.kmbeast.pojo.api.ApiResult;
 import com.kmbeast.pojo.api.Result;
 import com.kmbeast.pojo.em.HouseStatusEnum;
 import com.kmbeast.pojo.em.PaymentOrderStatusEnum;
+import com.kmbeast.pojo.em.RepairOrderStatusEnum;
+import com.kmbeast.pojo.em.RepairPaymentStatusEnum;
 import com.kmbeast.pojo.em.RentalBillPayStatusEnum;
 import com.kmbeast.pojo.em.RentalBillTypeEnum;
 import com.kmbeast.pojo.em.RentalContractStatusEnum;
@@ -21,10 +24,12 @@ import com.kmbeast.pojo.em.RoleEnum;
 import com.kmbeast.pojo.entity.House;
 import com.kmbeast.pojo.entity.Landlord;
 import com.kmbeast.pojo.entity.PaymentOrder;
+import com.kmbeast.pojo.entity.RepairOrder;
 import com.kmbeast.pojo.entity.RentalBill;
 import com.kmbeast.pojo.entity.RentalContract;
 import com.kmbeast.pojo.entity.RentalContractStatus;
 import com.kmbeast.pojo.vo.PaymentStartVO;
+import com.kmbeast.pojo.vo.RepairOrderVO;
 import com.kmbeast.pojo.vo.RentalBillVO;
 import com.kmbeast.service.PaymentOrderService;
 import com.kmbeast.service.RentalBillService;
@@ -47,6 +52,8 @@ public class PaymentOrderServiceImpl extends ServiceImpl<PaymentOrderMapper, Pay
 
     @Resource
     private RentalBillMapper rentalBillMapper;
+    @Resource
+    private RepairOrderMapper repairOrderMapper;
     @Resource
     private LandlordMapper landlordMapper;
     @Resource
@@ -89,6 +96,40 @@ public class PaymentOrderServiceImpl extends ServiceImpl<PaymentOrderMapper, Pay
         String htmlForm = alipaySupport.buildPagePayForm(paymentOrder.getOutTradeNo(), paymentOrder.getTotalAmount(),
                 paymentOrder.getSubject(), rentalBill.getRemark(), alipaySupport.buildReturnUrl(rentalBill.getId()));
         PaymentStartVO paymentStartVO = new PaymentStartVO(rentalBill.getId(), paymentOrder.getOutTradeNo(),
+                paymentOrder.getTotalAmount(), htmlForm);
+        return ApiResult.success(paymentStartVO);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Result<PaymentStartVO> createRepairPagePay(Integer repairOrderId) {
+        AssertUtils.notNull(repairOrderId, "报修工单ID不能为空");
+        RepairOrder repairOrder = getRepairOrderById(repairOrderId);
+        AssertUtils.equals(repairOrder.getTenantUserId(), LocalThreadHolder.getUserId(), "仅租客本人可发起支付");
+        AssertUtils.equals(repairOrder.getStatus(), RepairOrderStatusEnum.STATUS_4.getType(), "当前工单状态无法支付");
+        AssertUtils.equals(repairOrder.getPaymentStatus(), RepairPaymentStatusEnum.STATUS_1.getType(), "当前工单无需支付");
+        AssertUtils.isTrue(repairOrder.getRepairAmount() != null && repairOrder.getRepairAmount().doubleValue() > 0, "维修费用异常");
+
+        PaymentOrder paymentOrder = this.baseMapper.selectPendingByRepairOrderId(repairOrderId);
+        if (paymentOrder == null) {
+            paymentOrder = new PaymentOrder();
+            paymentOrder.setOrderNo(generateOrderNo());
+            paymentOrder.setRepairOrderId(repairOrder.getId());
+            paymentOrder.setContractId(repairOrder.getContractId());
+            paymentOrder.setLandlordId(repairOrder.getLandlordId());
+            paymentOrder.setTenantUserId(repairOrder.getTenantUserId());
+            paymentOrder.setSubject("报修工单支付-" + repairOrder.getRepairNo());
+            paymentOrder.setOutTradeNo(generateOutTradeNo());
+            paymentOrder.setTotalAmount(repairOrder.getRepairAmount());
+            paymentOrder.setPayChannel("ALIPAY");
+            paymentOrder.setStatus(PaymentOrderStatusEnum.STATUS_1.getType());
+            paymentOrder.setCreateTime(LocalDateTime.now());
+            paymentOrder.setUpdateTime(LocalDateTime.now());
+            save(paymentOrder);
+        }
+        String htmlForm = alipaySupport.buildPagePayForm(paymentOrder.getOutTradeNo(), paymentOrder.getTotalAmount(),
+                paymentOrder.getSubject(), repairOrder.getHandleNote(), alipaySupport.buildRepairReturnUrl(repairOrder.getId()));
+        PaymentStartVO paymentStartVO = new PaymentStartVO(repairOrder.getId(), paymentOrder.getOutTradeNo(),
                 paymentOrder.getTotalAmount(), htmlForm);
         return ApiResult.success(paymentStartVO);
     }
@@ -155,6 +196,36 @@ public class PaymentOrderServiceImpl extends ServiceImpl<PaymentOrderMapper, Pay
         return ApiResult.success(rentalBillVO);
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Result<RepairOrderVO> queryRepairStatus(Integer repairOrderId) {
+        AssertUtils.notNull(repairOrderId, "报修工单ID不能为空");
+        RepairOrderVO repairOrderVO = repairOrderMapper.getById(repairOrderId);
+        AssertUtils.notNull(repairOrderVO, "报修工单不存在");
+        assertRepairAccess(repairOrderVO);
+        if (Objects.equals(repairOrderVO.getPaymentStatus(), RepairPaymentStatusEnum.STATUS_2.getType())) {
+            return ApiResult.success(repairOrderVO);
+        }
+
+        PaymentOrder paymentOrder = this.baseMapper.selectPendingByRepairOrderId(repairOrderId);
+        if (paymentOrder == null) {
+            return ApiResult.success(repairOrderVO);
+        }
+        AlipaySupport.TradeQueryResult queryResult = alipaySupport.queryTrade(paymentOrder.getOutTradeNo());
+        if (queryResult.isSuccess()
+                && ("TRADE_SUCCESS".equals(queryResult.getTradeStatus())
+                || "TRADE_FINISHED".equals(queryResult.getTradeStatus()))) {
+            markPaymentSuccess(paymentOrder, queryResult.getAlipayTradeNo(), queryResult.getRawResponse());
+            repairOrderVO = repairOrderMapper.getById(repairOrderId);
+        } else if ("TRADE_CLOSED".equals(queryResult.getTradeStatus())) {
+            paymentOrder.setStatus(PaymentOrderStatusEnum.STATUS_3.getType());
+            paymentOrder.setNotifyContent(queryResult.getRawResponse());
+            paymentOrder.setUpdateTime(LocalDateTime.now());
+            updateById(paymentOrder);
+        }
+        return ApiResult.success(repairOrderVO);
+    }
+
     private void markPaymentSuccess(PaymentOrder paymentOrder, String alipayTradeNo, String notifyContent) {
         paymentOrder.setStatus(PaymentOrderStatusEnum.STATUS_2.getType());
         paymentOrder.setAlipayTradeNo(alipayTradeNo);
@@ -162,6 +233,11 @@ public class PaymentOrderServiceImpl extends ServiceImpl<PaymentOrderMapper, Pay
         paymentOrder.setPaidTime(LocalDateTime.now());
         paymentOrder.setUpdateTime(LocalDateTime.now());
         updateById(paymentOrder);
+
+        if (paymentOrder.getRepairOrderId() != null) {
+            markRepairPaymentSuccess(paymentOrder);
+            return;
+        }
 
         RentalBill rentalBill = getBillById(paymentOrder.getRentalBillId());
         if (!Objects.equals(rentalBill.getPayStatus(), RentalBillPayStatusEnum.STATUS_2.getType())) {
@@ -173,6 +249,16 @@ public class PaymentOrderServiceImpl extends ServiceImpl<PaymentOrderMapper, Pay
 
         if (Objects.equals(rentalBill.getBillType(), RentalBillTypeEnum.STATUS_1.getType())) {
             activateContractAfterDeposit(rentalBill, paymentOrder.getTenantUserId());
+        }
+    }
+
+    private void markRepairPaymentSuccess(PaymentOrder paymentOrder) {
+        RepairOrder repairOrder = getRepairOrderById(paymentOrder.getRepairOrderId());
+        if (!Objects.equals(repairOrder.getPaymentStatus(), RepairPaymentStatusEnum.STATUS_2.getType())) {
+            repairOrder.setPaymentStatus(RepairPaymentStatusEnum.STATUS_2.getType());
+            repairOrder.setPaidTime(LocalDateTime.now());
+            repairOrder.setUpdateTime(LocalDateTime.now());
+            repairOrderMapper.updateById(repairOrder);
         }
     }
 
@@ -216,10 +302,23 @@ public class PaymentOrderServiceImpl extends ServiceImpl<PaymentOrderMapper, Pay
         return rentalBill;
     }
 
+    private RepairOrder getRepairOrderById(Integer repairOrderId) {
+        RepairOrder repairOrder = repairOrderMapper.selectById(repairOrderId);
+        AssertUtils.notNull(repairOrder, "报修工单不存在");
+        return repairOrder;
+    }
+
     private void assertBillAccess(RentalBillVO rentalBillVO) {
         boolean isAdmin = Objects.equals(LocalThreadHolder.getRoleId(), RoleEnum.ADMIN.getRole());
         boolean isTenant = Objects.equals(rentalBillVO.getTenantUserId(), LocalThreadHolder.getUserId());
         boolean isLandlord = Objects.equals(LocalThreadHolder.getUserId(), getLandlordUserId(rentalBillVO.getLandlordId()));
+        AssertUtils.isTrue(isAdmin || isTenant || isLandlord, "非法操作");
+    }
+
+    private void assertRepairAccess(RepairOrderVO repairOrderVO) {
+        boolean isAdmin = Objects.equals(LocalThreadHolder.getRoleId(), RoleEnum.ADMIN.getRole());
+        boolean isTenant = Objects.equals(repairOrderVO.getTenantUserId(), LocalThreadHolder.getUserId());
+        boolean isLandlord = Objects.equals(LocalThreadHolder.getUserId(), getLandlordUserId(repairOrderVO.getLandlordId()));
         AssertUtils.isTrue(isAdmin || isTenant || isLandlord, "非法操作");
     }
 

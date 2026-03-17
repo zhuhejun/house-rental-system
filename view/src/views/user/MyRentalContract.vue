@@ -100,6 +100,7 @@ export default {
             detail: {},
             statusList: [],
             contractStatusConfig: {
+                1: { text: "待管理员审核", icon: "el-icon-s-check", color: "#E6A23C", status: "process" },
                 2: { text: "待租客确认", icon: "el-icon-time", color: "#409EFF", status: "process" },
                 3: { text: "待支付押金", icon: "el-icon-wallet", color: "#E6A23C", status: "process" },
                 4: { text: "已生效", icon: "el-icon-success", color: "#67C23A", status: "success" },

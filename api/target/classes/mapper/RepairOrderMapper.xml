@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kmbeast.mapper.RepairOrderMapper">
+
+    <select id="list" resultMap="BaseResultMap">
+        SELECT ro.id,
+               ro.repair_no,
+               ro.contract_id,
+               ro.house_id,
+               ro.landlord_id,
+               ro.tenant_user_id,
+               ro.title,
+               ro.repair_type,
+               ro.content,
+               ro.is_urgent,
+               ro.expect_visit_time,
+               ro.attachment_url,
+               ro.status,
+               ro.handle_note,
+               ro.handle_voucher_url,
+               ro.repair_amount,
+               ro.payment_status,
+               ro.cancel_reason,
+               ro.reject_reason,
+               ro.accept_time,
+               ro.finish_time,
+               ro.tenant_confirm_time,
+               ro.paid_time,
+               ro.create_time,
+               ro.update_time,
+               rc.contract_no,
+               h.name AS house_name,
+               h.cover AS house_cover,
+               lu.username AS landlord_name,
+               tu.username AS tenant_name
+        FROM repair_order ro
+        LEFT JOIN rental_contract rc ON rc.id = ro.contract_id
+        LEFT JOIN house h ON h.id = ro.house_id
+        LEFT JOIN landlord l ON l.id = ro.landlord_id
+        LEFT JOIN user lu ON lu.id = l.user_id
+        LEFT JOIN user tu ON tu.id = ro.tenant_user_id
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    ro.repair_no LIKE concat('%',#{keyword},'%')
+                    OR ro.title LIKE concat('%',#{keyword},'%')
+                    OR h.name LIKE concat('%',#{keyword},'%')
+                    OR rc.contract_no LIKE concat('%',#{keyword},'%')
+                    OR lu.username LIKE concat('%',#{keyword},'%')
+                    OR tu.username LIKE concat('%',#{keyword},'%')
+                )
+            </if>
+            <if test="landlordId != null">
+                AND ro.landlord_id = #{landlordId}
+            </if>
+            <if test="landlordUserId != null">
+                AND l.user_id = #{landlordUserId}
+            </if>
+            <if test="tenantUserId != null">
+                AND ro.tenant_user_id = #{tenantUserId}
+            </if>
+            <if test="contractId != null">
+                AND ro.contract_id = #{contractId}
+            </if>
+            <if test="houseId != null">
+                AND ro.house_id = #{houseId}
+            </if>
+            <if test="status != null">
+                AND ro.status = #{status}
+            </if>
+            <if test="paymentStatus != null">
+                AND ro.payment_status = #{paymentStatus}
+            </if>
+        </where>
+        ORDER BY ro.id DESC
+        <if test="current != null and size != null">
+            LIMIT #{current},#{size}
+        </if>
+    </select>
+
+    <select id="listCount" resultType="integer">
+        SELECT COUNT(*)
+        FROM repair_order ro
+        LEFT JOIN rental_contract rc ON rc.id = ro.contract_id
+        LEFT JOIN house h ON h.id = ro.house_id
+        LEFT JOIN landlord l ON l.id = ro.landlord_id
+        LEFT JOIN user lu ON lu.id = l.user_id
+        LEFT JOIN user tu ON tu.id = ro.tenant_user_id
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    ro.repair_no LIKE concat('%',#{keyword},'%')
+                    OR ro.title LIKE concat('%',#{keyword},'%')
+                    OR h.name LIKE concat('%',#{keyword},'%')
+                    OR rc.contract_no LIKE concat('%',#{keyword},'%')
+                    OR lu.username LIKE concat('%',#{keyword},'%')
+                    OR tu.username LIKE concat('%',#{keyword},'%')
+                )
+            </if>
+            <if test="landlordId != null">
+                AND ro.landlord_id = #{landlordId}
+            </if>
+            <if test="landlordUserId != null">
+                AND l.user_id = #{landlordUserId}
+            </if>
+            <if test="tenantUserId != null">
+                AND ro.tenant_user_id = #{tenantUserId}
+            </if>
+            <if test="contractId != null">
+                AND ro.contract_id = #{contractId}
+            </if>
+            <if test="houseId != null">
+                AND ro.house_id = #{houseId}
+            </if>
+            <if test="status != null">
+                AND ro.status = #{status}
+            </if>
+            <if test="paymentStatus != null">
+                AND ro.payment_status = #{paymentStatus}
+            </if>
+        </where>
+    </select>
+
+    <select id="getById" resultMap="BaseResultMap">
+        SELECT ro.id,
+               ro.repair_no,
+               ro.contract_id,
+               ro.house_id,
+               ro.landlord_id,
+               ro.tenant_user_id,
+               ro.title,
+               ro.repair_type,
+               ro.content,
+               ro.is_urgent,
+               ro.expect_visit_time,
+               ro.attachment_url,
+               ro.status,
+               ro.handle_note,
+               ro.handle_voucher_url,
+               ro.repair_amount,
+               ro.payment_status,
+               ro.cancel_reason,
+               ro.reject_reason,
+               ro.accept_time,
+               ro.finish_time,
+               ro.tenant_confirm_time,
+               ro.paid_time,
+               ro.create_time,
+               ro.update_time,
+               rc.contract_no,
+               h.name AS house_name,
+               h.cover AS house_cover,
+               lu.username AS landlord_name,
+               tu.username AS tenant_name
+        FROM repair_order ro
+        LEFT JOIN rental_contract rc ON rc.id = ro.contract_id
+        LEFT JOIN house h ON h.id = ro.house_id
+        LEFT JOIN landlord l ON l.id = ro.landlord_id
+        LEFT JOIN user lu ON lu.id = l.user_id
+        LEFT JOIN user tu ON tu.id = ro.tenant_user_id
+        WHERE ro.id = #{id}
+    </select>
+
+    <resultMap id="BaseResultMap" type="com.kmbeast.pojo.vo.RepairOrderVO">
+        <id column="id" property="id"/>
+        <result column="repair_no" property="repairNo"/>
+        <result column="contract_id" property="contractId"/>
+        <result column="house_id" property="houseId"/>
+        <result column="landlord_id" property="landlordId"/>
+        <result column="tenant_user_id" property="tenantUserId"/>
+        <result column="title" property="title"/>
+        <result column="repair_type" property="repairType"/>
+        <result column="content" property="content"/>
+        <result column="is_urgent" property="isUrgent"/>
+        <result column="expect_visit_time" property="expectVisitTime"/>
+        <result column="attachment_url" property="attachmentUrl"/>
+        <result column="status" property="status"/>
+        <result column="handle_note" property="handleNote"/>
+        <result column="handle_voucher_url" property="handleVoucherUrl"/>
+        <result column="repair_amount" property="repairAmount"/>
+        <result column="payment_status" property="paymentStatus"/>
+        <result column="cancel_reason" property="cancelReason"/>
+        <result column="reject_reason" property="rejectReason"/>
+        <result column="accept_time" property="acceptTime"/>
+        <result column="finish_time" property="finishTime"/>
+        <result column="tenant_confirm_time" property="tenantConfirmTime"/>
+        <result column="paid_time" property="paidTime"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="contract_no" property="contractNo"/>
+        <result column="house_name" property="houseName"/>
+        <result column="house_cover" property="houseCover"/>
+        <result column="landlord_name" property="landlordName"/>
+        <result column="tenant_name" property="tenantName"/>
+    </resultMap>
+
+</mapper>

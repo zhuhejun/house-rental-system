@@ -93,6 +93,10 @@ const routes = [
       {
         path: 'rental-bill',
         component: () => import(`@/views/service/RentalBill.vue`),
+      },
+      {
+        path: 'repair-order',
+        component: () => import(`@/views/service/RepairOrder.vue`),
       }
     ],
   },
@@ -206,6 +210,14 @@ const routes = [
         meta: { requireAuth: true },
       },
       {
+        path: "/repair-order-manage",
+        name: '报修工单管理',
+        show: true,
+        icon: 'el-icon-s-tools',
+        component: () => import(`@/views/admin/RepairOrderManage.vue`),
+        meta: { requireAuth: true },
+      },
+      {
         path: "/community-update",
         name: '修改小区信息',
         show: false,
@@ -283,6 +295,12 @@ const routes = [
         path: "/my-rental-bill",
         name: '我的账单',
         component: () => import(`@/views/user/MyRentalBill.vue`),
+        meta: { requireAuth: true },
+      },
+      {
+        path: "/my-repair-order",
+        name: '我的报修',
+        component: () => import(`@/views/user/MyRepairOrder.vue`),
         meta: { requireAuth: true },
       },
     ]

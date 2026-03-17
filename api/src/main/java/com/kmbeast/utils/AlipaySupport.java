@@ -232,6 +232,17 @@ public class AlipaySupport {
         return baseUrl + "?billId=" + billId;
     }
 
+    public String buildRepairReturnUrl(Integer repairOrderId) {
+        String baseUrl = alipayProperties.getReturnUrl();
+        if (baseUrl.contains("/payment-result")) {
+            baseUrl = baseUrl.replace("/payment-result", "/my-repair-order");
+        }
+        if (baseUrl.contains("?")) {
+            return baseUrl + "&repairOrderId=" + repairOrderId;
+        }
+        return baseUrl + "?repairOrderId=" + repairOrderId;
+    }
+
     @Data
     @AllArgsConstructor
     public static class TradeQueryResult {
