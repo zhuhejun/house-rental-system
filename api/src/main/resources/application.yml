@@ -27,6 +27,14 @@ mybatis-plus:
       id-type: auto # 主键策略
   mapper-locations: classpath*:/mapper/**/*.xml # mapper文件位置
 
+ai:
+  dashscope:
+    enabled: ${AI_DASHSCOPE_ENABLED:true}
+    api-key: ${AI_DASHSCOPE_API_KEY:}
+    base-url: ${AI_DASHSCOPE_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}
+    model: ${AI_DASHSCOPE_MODEL:qwen-plus}
+    temperature: ${AI_DASHSCOPE_TEMPERATURE:0.3}
+
 alipay:
   app-id: ${ALIPAY_APP_ID:9021000162607038}
   private-key: ${ALIPAY_PRIVATE_KEY:MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC8NPexF0iUHt/3fKeXhuokelMIanNzilvYmpbsapd5bEjpbJ78066GS4/q7qQ6FT0X4nRgjorzYsd1sYVpgXz5qbYQ/kBGEnRXhtnh0rMB3GB4/ETUWdjiPuZWQeIB9ueShUJBDIV9t2eGhzz6oYLLr0RYgJ8Zbq7ZJ+2kJ1pVMtIZb53+CfoApUeOr8OxppftoalTe+qj6wQ6HG9wPNFjreuyWpIIWoF/rvI10JQhwEowQWLVGZZdIyZkKJ8GjOH/FORaAtsrQbGIbfxZI5QUP4hE0ii/KtsnFgzZM6J0GOZVKIlubRM+RFC3avztqzEVhVUe7kpLXlrfxQKoGoiLAgMBAAECggEAK7YNlPa4Z5ZoI/2ymtG9za0PXdQDbmFDBaKZzNzQw2Wv5W7R2hx72zrvePvl7ouCPerdZpOUmARoGOCbAK8PTJjq7TVvzhZ5KN7r+bPK2XLKgS7t+XfIlHtRWdVBXX1vuSr0AVGcK1+OTsNYGUmrrAzPzdJJoUmAmHTaj5aIN2MI0xJakS0sLjXAjDNPwROl4r1c9ug7UMNn8M3/li42Q0U3TxgqrswfN2No98ARxqBTX8S8T8Es/0KCJwtLlSjYzFGRxZUAQMjqetCj1e1UUZOPGkSnnApewR386tcT2d1oFfIYARD+J9Rub5RrxLgVmbA+dRNyBJRb2ODq6JD0UQKBgQDxxRMM/kqHjl+z894yc3hGR1bKwC4K7BotbLhiT+pbs3lsymz2JYqs9SMbp7rSgc8ah3hW4onRuEtU1r7Ew78Y8fQ6RgzWL5UeTCeImv3M/Cw/Z1SS5Uhp6hnnTHFLKLLYvb9S5mhs8VS4Q4ZZVrV14NxSN8Pg7igxtbNM8GUbyQKBgQDHSNIi6R0wfj95tFoe2eq5e5XNbrP6PdD+0+JJgMPPunksmyRbrBHYFNZW9uH6oQidZp45d8rfsroXum4Y4wNe+M3hYDi50rvxcUT6Wfi7jtGP1/6wZXtDFDy2t2Ui0hRulHb0coHC7eHzcU4wOgnB1g6CwTC3kkkbxcPxZk7DswKBgQCsVZjlyyFfDPpk8HEzLyHNnq5cKa7oNDHYrUWlNmfMY9sq1APlVQ9LiBU1clL2GHeC5ou+Cw7IQgDYgZZL9WfzJQy8uRAPYK1/gjMv6aL+CcaUj1g2uV7ruGYsfE3JkEIjwuVs9zX6ae/ExMUwS2FfnCAQLxXd8IUQIf+j2TuJGQKBgCwkqE+NXabhQERAO/o7gTAG/R7dV8alrMbVvnlTqYw5HSBRWVNpISbBLt1ioJn408Sx93h5XZoBqBEbfcnLd3KxIEG9I7Odx33q/kGKbnt1XlxDlyoRwKUSNYSvyRpWeKop/tOVDcNVGEjpn001ffXO6bXy/0yafdFGFGpDpEzbAoGAWy5JUakCGYuiWUgTpKtbcUUbs5DxKmtOSC8hD0unTTu5ZoZPVaviphgp3G6XnscGJdvDbJQjoJY6zKngPlTF3xOxYtVa5Ts6iIwna3MvWYGy16DL4Ar5pAftgTMpOw3cwLaZaFSEA62sO7WEHkUrZCcXDIK7/tUAr/Iifya2O7k=}
@@ -37,5 +45,3 @@ alipay:
   charset: UTF-8
   sign-type: RSA2
   format: json
-
-

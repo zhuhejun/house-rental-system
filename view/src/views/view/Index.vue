@@ -1,5 +1,6 @@
 <template>
     <div class="visitor-home">
+        <FloatingAiEntry />
         <!-- 动态渐变背景 -->
         <div class="dynamic-bg"></div>
 
@@ -28,6 +29,12 @@
                         <input type="text" v-model="houseName" placeholder="搜索房屋">
                         <button class="search-btn" @click="searchHouse">
                             <i class="el-icon-search"></i>
+                        </button>
+                    </div>
+                    <div class="hero-actions">
+                        <button class="assistant-btn" @click="goAiAssistant">
+                            <i class="el-icon-chat-line-round"></i>
+                            AI智能助手
                         </button>
                     </div>
                 </div>
@@ -87,9 +94,10 @@
 
 <script>
 import Logo from '@/components/Logo.vue';
+import FloatingAiEntry from '@/components/FloatingAiEntry.vue';
 
 export default {
-    components: { Logo },
+    components: { Logo, FloatingAiEntry },
     data() {
         return {
             houseName: '',
@@ -134,6 +142,9 @@ export default {
         },
         goExplore() {
             window.open(`/search-house?key=-1`, '_blank');
+        },
+        goAiAssistant() {
+            this.$router.push('/ai-assistant');
         },
         selectNews(news) {
             window.open(`/house-news-page?id=${news.id}`, '_blank');
@@ -235,6 +246,31 @@ export default {
 
 .search-container {
     max-width: 800px;
+}
+
+.hero-actions {
+    display: flex;
+    margin-top: 14px;
+}
+
+.assistant-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.18);
+    color: #fff;
+    font-size: 15px;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    transition: all 0.3s ease;
+
+    &:hover {
+        background: rgba(255,255,255,0.26);
+        transform: translateY(-2px);
+    }
 }
 
 .search-box {

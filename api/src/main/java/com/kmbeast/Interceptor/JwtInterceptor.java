@@ -43,11 +43,13 @@ public class JwtInterceptor implements HandlerInterceptor {
                 "/viewer/houseSizeNumber", // 游客页房屋面积
                 "/viewer/houseSizeNumber", // 游客页房屋面积
                 "/viewer/houseRentRange", // 游客页房屋租金
+                "/ai-assistant", // AI 助手第一版公开接口
         };
 
         // 检查是否在排除路径中
         for (String path : excludePaths) {
             if (requestURI.contains(path)) {
+                tryStoreUserContext(request);
                 return true;
             }
         }
@@ -93,6 +95,31 @@ public class JwtInterceptor implements HandlerInterceptor {
             writer.flush();
         }
         return false;
+    }
+
+    /**
+     * 对公开接口做可选身份识别：带了合法 token 就补充线程上下文，不带或非法都直接忽略。
+     */
+    private void tryStoreUserContext(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return;
+        }
+        String token = authHeader.substring(7).trim();
+        if (token.isEmpty()) {
+            return;
+        }
+        try {
+            Claims claims = JwtUtil.fromToken(token);
+            if (claims == null) {
+                return;
+            }
+            Integer userId = claims.get("id", Integer.class);
+            Integer roleId = claims.get("role", Integer.class);
+            LocalThreadHolder.setUserId(userId, roleId);
+        } catch (Exception ignored) {
+            // 公开接口下 token 非法时直接按游客处理，不阻断请求
+        }
     }
 
     @Override

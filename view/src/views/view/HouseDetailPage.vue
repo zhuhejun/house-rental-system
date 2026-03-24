@@ -11,6 +11,7 @@
             <div class="gallery-section">
                 <div class="main-image">
                     <img v-if="coverList.length > 0" :src="coverList[currentImageIndex].url" alt="房屋封面图">
+                    <div v-else class="empty-cover">暂无房屋图片</div>
                 </div>
                 <div class="thumbnail-list">
                     <div v-for="(cover, index) in coverList" :key="cover.uid" class="thumbnail"
@@ -33,7 +34,7 @@
                 <div class="meta-info">
                     <div class="meta-item">
                         <i class="el-icon-location"></i>
-                        <span>{{ house.cityAreaName }} · {{ house.communityName }}</span>
+                        <span>{{ areaDisplayText }}</span>
                     </div>
                     <div class="meta-item">
                         <i class="el-icon-house"></i>
@@ -81,28 +82,30 @@
             <div class="facilities-section">
                 <div class="section-title">生活设施</div>
                 <div class="facilities-grid">
-                    <div v-for="(item, key) in houseLivingFacilityList" :key="key" class="facility-item"
+                    <div v-for="item in houseLivingFacilityList" :key="item.key" class="facility-item"
                         :class="{ 'available': Boolean(item.selected) }">
-                        <i :class="getFacilityIcon(key)"></i>
+                        <i :class="getFacilityIcon(item.key)"></i>
                         <span>{{ item.label }}</span>
                     </div>
+                    <div v-if="houseLivingFacilityList.length === 0" class="facility-empty">暂无设施信息</div>
                 </div>
             </div>
 
             <!-- 房屋描述 -->
             <div class="description-section">
                 <div class="section-title">房屋描述</div>
-                <div class="description-content" v-html="house.detail"></div>
+                <div class="description-content" v-html="house.detail || '暂无房屋描述'"></div>
             </div>
 
             <!-- 底部操作栏 -->
             <div class="action-bar">
                 <div class="contact-info">
                     <div class="avatar">
-                        <img :src="house.landlordAvatar" alt="房东头像">
+                        <img v-if="house.landlordAvatar" :src="house.landlordAvatar" alt="房东头像">
+                        <div v-else class="avatar-placeholder">房东</div>
                     </div>
                     <div class="info">
-                        <div class="name">{{ house.landlordName }}</div>
+                        <div class="name">{{ house.landlordName || '未设置房东昵称' }}</div>
                         <div class="role">房东</div>
                     </div>
                 </div>
@@ -125,7 +128,7 @@ export default {
             houseId: null,
             house: {},
             coverList: [],
-            houseLivingFacilityList: {},
+            houseLivingFacilityList: [],
             currentImageIndex: 0,
             userId: null,
             avatar: '',
@@ -135,6 +138,13 @@ export default {
             dateOrderList: [],
             selctedDateItem: null,
             selctedDateSplitItem: null,
+        }
+    },
+    computed: {
+        areaDisplayText() {
+            const cityAreaName = this.house.cityAreaName || '未标注区域';
+            const communityName = this.house.communityName || '未选小区';
+            return `${cityAreaName} · ${communityName}`;
         }
     },
     created() {
@@ -213,11 +223,36 @@ export default {
                         uid: Date.now() + Math.floor(Math.random() * 1000),
                         url: url.trim()
                     }));
-                this.houseLivingFacilityList = JSON.parse(data.livingFacilities || '{}');
+                this.houseLivingFacilityList = this.parseLivingFacilities(data.livingFacilities);
             } catch (error) {
                 this.$message.error('获取房屋信息失败');
                 console.error(error);
             }
+        },
+        parseLivingFacilities(rawValue) {
+            if (!rawValue) {
+                return [];
+            }
+            try {
+                const parsed = JSON.parse(rawValue);
+                if (Array.isArray(parsed)) {
+                    return parsed.map((item, index) => ({
+                        key: item.type || item.key || `facility_${index}`,
+                        label: item.label || '未命名设施',
+                        selected: Boolean(item.selected)
+                    }));
+                }
+                if (parsed && typeof parsed === 'object') {
+                    return Object.keys(parsed).map(key => ({
+                        key,
+                        label: parsed[key].label || key,
+                        selected: Boolean(parsed[key].selected)
+                    }));
+                }
+            } catch (error) {
+                console.warn('生活设施解析失败，已回退为空列表', error);
+            }
+            return [];
         },
         getFacilityIcon(key) {
             const iconMap = {
@@ -360,6 +395,16 @@ export default {
             width: 100%;
             height: 100%;
             object-fit: cover;
+        }
+
+        .empty-cover {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 360px;
+            color: #999;
+            background: #f7f7f7;
+            font-size: 16px;
         }
     }
 
@@ -541,6 +586,12 @@ export default {
                 font-size: 14px;
             }
         }
+
+        .facility-empty {
+            grid-column: 1 / -1;
+            color: #999;
+            padding: 12px 0;
+        }
     }
 }
 
@@ -603,6 +654,17 @@ export default {
                 width: 100%;
                 height: 100%;
                 object-fit: cover;
+            }
+
+            .avatar-placeholder {
+                width: 100%;
+                height: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: #f2f6fc;
+                color: #909399;
+                font-size: 12px;
             }
         }
 

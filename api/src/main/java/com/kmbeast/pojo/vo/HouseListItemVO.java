@@ -64,6 +64,10 @@ public class HouseListItemVO {
      */
     private String depositMethodName;
     /**
+     * 生活设施JSON
+     */
+    private String livingFacilities;
+    /**
      * 房屋状态
      */
     private Integer status;

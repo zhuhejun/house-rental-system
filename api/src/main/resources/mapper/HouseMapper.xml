@@ -24,7 +24,7 @@
                h.rental_type,
                h.status,
                h.create_time,
-               c.name      AS community_name,
+               IFNULL(c.name, '未选小区') AS community_name,
                a.parent_id AS top_area_id,
                a.name      AS city_area_name,
                l.id        AS landlord_id,
@@ -54,12 +54,13 @@
         h.size_number,
         h.status,
         h.create_time,
-        c.name AS community_name,
+        IFNULL(c.name, '未选小区') AS community_name,
         a.name AS city_area_name,
         h.direction_id,
         h.fitment_status_id,
         h.rent,
         h.deposit_method_id
+        ,h.living_facilities
         FROM house h
         LEFT JOIN community c ON c.id = h.community_id
         LEFT JOIN area a ON a.id = h.area_id
@@ -70,9 +71,17 @@
             <if test="landlordId != null">
                 AND h.landlord_id = #{landlordId}
             </if>
-            <if test="areaId != null">
-                AND h.area_id = #{areaId}
-            </if>
+            <choose>
+                <when test="areaIds != null and areaIds.size > 0">
+                    AND h.area_id IN
+                    <foreach collection="areaIds" item="areaIdItem" separator="," open="(" close=")" index="index">
+                        #{areaIdItem}
+                    </foreach>
+                </when>
+                <when test="areaId != null">
+                    AND h.area_id = #{areaId}
+                </when>
+            </choose>
             <if test="communityId != null">
                 AND h.community_id = #{communityId}
             </if>
@@ -146,9 +155,17 @@
             <if test="landlordId != null">
                 AND h.landlord_id = #{landlordId}
             </if>
-            <if test="areaId != null">
-                AND h.area_id = #{areaId}
-            </if>
+            <choose>
+                <when test="areaIds != null and areaIds.size > 0">
+                    AND h.area_id IN
+                    <foreach collection="areaIds" item="areaIdItem" separator="," open="(" close=")" index="index">
+                        #{areaIdItem}
+                    </foreach>
+                </when>
+                <when test="areaId != null">
+                    AND h.area_id = #{areaId}
+                </when>
+            </choose>
             <if test="communityId != null">
                 AND h.community_id = #{communityId}
             </if>
@@ -206,9 +223,17 @@
             <if test="landlordId != null">
                 AND h.landlord_id = #{landlordId}
             </if>
-            <if test="areaId != null">
-                AND h.area_id = #{areaId}
-            </if>
+            <choose>
+                <when test="areaIds != null and areaIds.size > 0">
+                    AND h.area_id IN
+                    <foreach collection="areaIds" item="areaIdItem" separator="," open="(" close=")" index="index">
+                        #{areaIdItem}
+                    </foreach>
+                </when>
+                <when test="areaId != null">
+                    AND h.area_id = #{areaId}
+                </when>
+            </choose>
             <if test="communityId != null">
                 AND h.community_id = #{communityId}
             </if>
@@ -323,6 +348,7 @@
         <result column="rent" property="rent"/>
         <result column="deposit_method_id" property="depositMethodId"/>
         <result column="deposit_method_name" property="depositMethodName"/>
+        <result column="living_facilities" property="livingFacilities"/>
         <result column="create_time" property="createTime"/>
     </resultMap>
 

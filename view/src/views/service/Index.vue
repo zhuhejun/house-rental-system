@@ -1,5 +1,6 @@
 <template>
     <div class="container-center">
+        <FloatingAiEntry />
         <div class="top">
             <div class="logo">
                 <div>
@@ -41,7 +42,10 @@
 </template>
 
 <script>
+import FloatingAiEntry from "@/components/FloatingAiEntry.vue";
+
 export default {
+    components: { FloatingAiEntry },
     data() {
         return {
             userInfo: {},

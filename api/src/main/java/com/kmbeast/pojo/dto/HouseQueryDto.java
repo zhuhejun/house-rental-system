@@ -82,6 +82,10 @@ public class HouseQueryDto extends QueryDto {
      */
     private List<Integer> ids;
     /**
+     * 地区ID列表，用于城市级联查询
+     */
+    private List<Integer> areaIds;
+    /**
      * 行为类型
      */
     private Integer type;

@@ -19,6 +19,11 @@ const routes = [
     component: () => import(`@/views/view/Index.vue`)
   },
   {
+    path: "/ai-assistant",
+    name: 'aiAssistant',
+    component: () => import(`@/views/common/AiAssistant.vue`)
+  },
+  {
     path: "/notice-detail",
     name: 'noticeDetail',
     component: () => import(`@/views/user/NoticeDetail.vue`)
@@ -97,6 +102,10 @@ const routes = [
       {
         path: 'repair-order',
         component: () => import(`@/views/service/RepairOrder.vue`),
+      },
+      {
+        path: 'ai-assistant',
+        component: () => import(`@/views/common/AiAssistant.vue`),
       }
     ],
   },
@@ -301,6 +310,12 @@ const routes = [
         path: "/my-repair-order",
         name: '我的报修',
         component: () => import(`@/views/user/MyRepairOrder.vue`),
+        meta: { requireAuth: true },
+      },
+      {
+        path: "/my-ai-assistant",
+        name: 'AI助手',
+        component: () => import(`@/views/common/AiAssistant.vue`),
         meta: { requireAuth: true },
       },
     ]

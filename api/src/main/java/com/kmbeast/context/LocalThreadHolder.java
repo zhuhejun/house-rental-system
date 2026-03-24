@@ -29,14 +29,16 @@ public class LocalThreadHolder {
      * @return Integer
      */
     public static Integer getUserId() {
-        return USER_HOLDER.get().get("userId");
+        Map<String, Integer> map = USER_HOLDER.get();
+        return map == null ? null : map.get("userId");
     }
 
     /**
      * 取出用户角色
      */
     public static Integer getRoleId() {
-        return USER_HOLDER.get().get("role");
+        Map<String, Integer> map = USER_HOLDER.get();
+        return map == null ? null : map.get("role");
     }
 
     /**

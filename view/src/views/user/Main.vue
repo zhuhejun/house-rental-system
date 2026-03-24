@@ -1,5 +1,6 @@
 <template>
     <div class="app-container">
+        <FloatingAiEntry />
 
         <div v-if="loading" class="global-loading">
             <i class="el-icon-loading"></i>
@@ -191,6 +192,7 @@
 import Logo from "@/components/Logo"
 import AutoInput from '@/components/AutoInput.vue';
 import Tab from "@/components/Tab"
+import FloatingAiEntry from "@/components/FloatingAiEntry.vue"
 import {
     setUserInfo,
     getUserInfo,
@@ -199,7 +201,7 @@ import {
 } from "@/utils/storage"
 
 export default {
-    components: { Logo, AutoInput, Tab },
+    components: { Logo, AutoInput, Tab, FloatingAiEntry },
     name: "AppLayout",
     data() {
         return {
@@ -221,6 +223,7 @@ export default {
                 { path: '/my-rental-termination', icon: 'el-icon-switch-button', title: '退租管理' },
                 { path: '/my-rental-bill', icon: 'el-icon-wallet', title: '我的账单' },
                 { path: '/my-repair-order', icon: 'el-icon-s-tools', title: '我的报修' },
+                { path: '/my-ai-assistant', icon: 'el-icon-chat-line-round', title: 'AI助手' },
                 { path: '/notice-list', icon: '', title: '系统公告' },
                 { path: '/my-save', icon: '', title: '我的收藏' },
             ],

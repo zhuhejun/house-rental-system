@@ -98,7 +98,7 @@ public class HouseServiceImpl extends ServiceImpl<HouseMapper, House> implements
             }
             // 通过户型类型ID，设置户型文本字样
             if (Objects.nonNull(houseVO.getSizedId())) {
-                String detail = HouseSizedEnum.getDetail(houseVO.getTypeId());
+                String detail = HouseSizedEnum.getDetail(houseVO.getSizedId());
                 houseVO.setSizedName(detail);
             }
             // 设置租赁方式
@@ -349,6 +349,7 @@ public class HouseServiceImpl extends ServiceImpl<HouseMapper, House> implements
     @Override
     public Result<HouseVO> selectById(Integer id) {
         HouseVO houseVO = this.baseMapper.getById(id);
+        AssertUtils.notNull(houseVO, "房源不存在或已被删除");
         List<HouseVO> houseVOList = new ArrayList<>();
         houseVOList.add(houseVO);
         dealHouseVOStatus(houseVOList);

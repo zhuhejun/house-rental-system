@@ -4,10 +4,10 @@
             <div class="nav-left">
                 <Tab :buttons="[
                     { label: '全部', value: 'null' },
-                    { label: '预约中', value: '1' },
-                    { label: '已预约', value: '2' },
-                    { label: '预约失败', value: '3' },
-                    { label: '已取消', value: '4' },
+                    { label: '待确认', value: '1' },
+                    { label: '已确认', value: '2' },
+                    { label: '已拒绝', value: '3' },
+                    { label: '用户已取消', value: '4' },
                     { label: '已完成', value: '5' },
                 ]" initialActive="null" @change="handleChange" />
             </div>
@@ -30,10 +30,10 @@
                     <el-table-column prop="orderTimeSplit" :sortable="true" width="168" label="预约时间段"></el-table-column>
                     <el-table-column prop="orderStatus" width="168" label="状态">
                         <template #default="scope">
-                            <el-tag size="mini" v-if="scope.row.orderStatus === 1">预约中</el-tag>
-                            <el-tag size="mini" v-else-if="scope.row.orderStatus === 2" type="success">已预约</el-tag>
-                            <el-tag size="mini" v-else-if="scope.row.orderStatus === 3" type="danger">预约失败</el-tag>
-                            <el-tag size="mini" v-else-if="scope.row.orderStatus === 4" type="info">已取消</el-tag>
+                            <el-tag size="mini" v-if="scope.row.orderStatus === 1">待确认</el-tag>
+                            <el-tag size="mini" v-else-if="scope.row.orderStatus === 2" type="success">已确认</el-tag>
+                            <el-tag size="mini" v-else-if="scope.row.orderStatus === 3" type="danger">已拒绝</el-tag>
+                            <el-tag size="mini" v-else-if="scope.row.orderStatus === 4" type="info">用户已取消</el-tag>
                             <el-tag size="mini" v-else-if="scope.row.orderStatus === 5" type="success">已完成</el-tag>
                         </template>
                     </el-table-column>
@@ -94,12 +94,12 @@
                     <div style="font-size: 18px;">{{ houseOrderInfo.houseName }}</div>
                     <div style="margin-top: 20px;display: flex;gap: 10px;">
                         <div>
-                            <el-tag size="mini" v-if="houseOrderInfo.orderStatus === 1">状态:预约中</el-tag>
+                            <el-tag size="mini" v-if="houseOrderInfo.orderStatus === 1">状态:待确认</el-tag>
                             <el-tag size="mini" v-else-if="houseOrderInfo.orderStatus === 2"
-                                type="success">状态:已预约</el-tag>
+                                type="success">状态:已确认</el-tag>
                             <el-tag size="mini" v-else-if="houseOrderInfo.orderStatus === 3"
-                                type="danger">状态:预约失败</el-tag>
-                            <el-tag size="mini" v-else-if="houseOrderInfo.orderStatus === 4" type="info">状态:已取消</el-tag>
+                                type="danger">状态:已拒绝</el-tag>
+                            <el-tag size="mini" v-else-if="houseOrderInfo.orderStatus === 4" type="info">状态:用户已取消</el-tag>
                             <el-tag size="mini" v-else-if="houseOrderInfo.orderStatus === 5"
                                 type="success">状态:已完成</el-tag>
                         </div>
@@ -114,18 +114,40 @@
             </div>
             <!-- 状态流转区域 -->
             <div>
-                <status-flow :status-records="houseOrderStatusList" />
+                <status-flow :status-records="houseOrderStatusList" :status-config="landlordStatusConfig" title="预约状态流转记录" />
+            </div>
+            <div v-if="houseOrderInfo.orderStatus === 5">
+                <h3>用户评价</h3>
+                <div v-if="houseOrderEvaluations.length > 0" class="evaluation-panel">
+                    <div class="evaluation-header">
+                        <div class="evaluation-user">
+                            <img v-if="houseOrderEvaluations[0].avatar" :src="houseOrderEvaluations[0].avatar" alt="用户头像">
+                            <div v-else class="evaluation-avatar-placeholder">用户</div>
+                            <div>
+                                <div class="evaluation-username">{{ houseOrderEvaluations[0].username || '匿名用户' }}</div>
+                                <div class="evaluation-time">{{ houseOrderEvaluations[0].createTime }}</div>
+                            </div>
+                        </div>
+                        <el-rate disabled v-model="houseOrderEvaluations[0].score" show-text></el-rate>
+                    </div>
+                    <div class="evaluation-text">
+                        {{ houseOrderEvaluations[0].text || '该用户暂未填写评价内容' }}
+                    </div>
+                </div>
+                <div v-else class="evaluation-empty">
+                    该预约已完成，但用户暂未提交服务评价。
+                </div>
             </div>
             <!-- 拒绝预约 -->
             <div>
-                <h3>预约失败原由</h3>
-                <el-input :disabled="houseOrderInfo.orderStatus === 3" type="textarea" :rows="2" placeholder="如果拒绝客户预约,请补充原因" v-model="apiParam.rejectCause">
+                <h3>拒绝原因</h3>
+                <el-input :disabled="houseOrderInfo.orderStatus === 3" type="textarea" :rows="2" placeholder="如果拒绝客户预约，请补充原因" v-model="apiParam.rejectCause">
                 </el-input>
             </div>
             <span slot="footer" class="dialog-footer">
                 <span class="primary-bt" @click="cancelOperation">关闭</span>
                 <span v-if="houseOrderInfo.orderStatus === 1" class="info-bt" @click="handleConfirmNo">
-                    取消客户预约
+                    拒绝预约
                 </span>
                 <span v-if="houseOrderInfo.orderStatus === 1" class="info-bt" @click="handleOrderConfirm">
                     确认客户预约
@@ -168,6 +190,13 @@ export default {
             content: '',
             houseOrderEvaluations: [],
             houseOrderStatusList: [],
+            landlordStatusConfig: {
+                1: { text: "待确认", icon: "el-icon-time", color: "#409EFF", status: "process" },
+                2: { text: "已确认", icon: "el-icon-success", color: "#67C23A", status: "success" },
+                3: { text: "已拒绝", icon: "el-icon-warning", color: "#F56C6C", status: "error" },
+                4: { text: "用户已取消", icon: "el-icon-circle-close", color: "#909399", status: "error" },
+                5: { text: "已完成", icon: "el-icon-finished", color: "#67C23A", status: "success" }
+            }
         };
     },
     created() {
@@ -178,7 +207,7 @@ export default {
             try {
                 this.houseOrderInfo.orderStatus = 2;
                 await this.$axios.put(`/house-order-info/update`, this.houseOrderInfo);
-                this.$message.success("预约确认成功");
+                this.$message.success("预约已确认");
                 this.fetchFreshData();
                 this.cancelOperation();
             } catch (error) {
@@ -197,7 +226,7 @@ export default {
                 }
                 this.houseOrderInfo.orderStatus = 3;
                 await this.$axios.put(`/house-order-info/update`, this.houseOrderInfo);
-                this.$message.success("取消预约成功");
+                this.$message.success("已拒绝该预约");
                 this.fetchFreshData();
                 this.cancelOperation();
             } catch (error) {
@@ -239,6 +268,8 @@ export default {
         },
         cancelOperation() {
             this.houseOrderInfo = {};
+            this.houseOrderEvaluations = [];
+            this.houseOrderStatusList = [];
             this.dialogVisible = false;
 
         },
@@ -271,8 +302,12 @@ export default {
                 const queryDto = {
                     houseOrderInfoId: item.id
                 };
-                const { data } = await this.$axios.post(`/house-order-status/list`, queryDto);
-                this.houseOrderStatusList = data;
+                const [{ data: statusData }, { data: evaluationData }] = await Promise.all([
+                    this.$axios.post(`/house-order-status/list`, queryDto),
+                    this.$axios.post(`/house-order-evaluations/list`, queryDto)
+                ]);
+                this.houseOrderStatusList = statusData;
+                this.houseOrderEvaluations = evaluationData;
                 this.dialogVisible = true;
                 this.houseOrderInfo = { ...item };
             } catch (error) {
@@ -495,6 +530,71 @@ export default {
     display: flex;
     justify-content: left;
     margin-top: 20px;
+}
+
+.evaluation-panel {
+    background: #fafafa;
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+}
+
+.evaluation-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+}
+
+.evaluation-user {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    img,
+    .evaluation-avatar-placeholder {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+}
+
+.evaluation-avatar-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #eef2f6;
+    color: #909399;
+    font-size: 12px;
+}
+
+.evaluation-username {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+}
+
+.evaluation-time {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #999;
+}
+
+.evaluation-text {
+    margin-top: 14px;
+    font-size: 14px;
+    line-height: 1.7;
+    color: #666;
+}
+
+.evaluation-empty {
+    margin-bottom: 16px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    background: #fafafa;
+    color: #999;
+    font-size: 13px;
 }
 
 

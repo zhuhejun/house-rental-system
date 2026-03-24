@@ -29,6 +29,11 @@ export default {
             activeValue: this.initialActive
         }
     },
+    watch: {
+        initialActive(newValue) {
+            this.activeValue = newValue
+        }
+    },
     computed: {
         activeButtonIndex() {
             return this.buttons.findIndex(b => b.value === this.activeValue)
