@@ -182,11 +182,12 @@ export default {
                 6: { text: "已拒绝", icon: "el-icon-close", color: "#F56C6C", status: "error" },
                 7: { text: "已取消", icon: "el-icon-warning", color: "#909399", status: "error" },
                 8: { text: "已到期", icon: "el-icon-finished", color: "#909399", status: "success" },
-                9: { text: "退租申请中", icon: "el-icon-document-remove", color: "#E6A23C", status: "process" },
+                9: { text: "待提交退租结算", icon: "el-icon-document", color: "#E6A23C", status: "process" },
                 10: { text: "待退租审核", icon: "el-icon-s-check", color: "#409EFF", status: "process" },
                 11: { text: "待退押", icon: "el-icon-money", color: "#E6A23C", status: "process" },
                 12: { text: "待审核退押", icon: "el-icon-s-order", color: "#409EFF", status: "process" },
-                13: { text: "已退租", icon: "el-icon-circle-close", color: "#909399", status: "success" }
+                13: { text: "已退租", icon: "el-icon-circle-close", color: "#909399", status: "success" },
+                14: { text: "待对方确认退租", icon: "el-icon-user", color: "#E6A23C", status: "process" }
             }
         };
     },

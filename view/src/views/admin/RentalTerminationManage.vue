@@ -1,9 +1,5 @@
 <template>
     <div class="container">
-        <div class="page-tip">
-            退租审核已独立到本页。管理员可在这里查看退租申请、审核退租、审核退押凭证。
-        </div>
-
         <div class="top-header">
             <div class="nav-left">
                 <Tab :buttons="statusTabs" initialActive="null" @change="handleChange" />
@@ -54,14 +50,15 @@
                     <div><strong>租客：</strong>{{ detail.tenantName }}</div>
                     <div><strong>当前状态：</strong>{{ statusText(detail.status) }}</div>
                     <div><strong>原始押金：</strong>{{ detail.depositAmount }}</div>
-                    <div v-if="detail.terminationReason"><strong>退租原因：</strong>{{ detail.terminationReason }}</div>
+                    <div v-if="detail.terminationReason"><strong>{{ applyReasonLabel(detail) }}：</strong>{{ detail.terminationReason }}</div>
                     <div v-if="detail.terminationRefundAmount !== null && detail.terminationRefundAmount !== undefined">
                         <strong>协商退押金额：</strong>{{ detail.terminationRefundAmount }}
                     </div>
                     <div v-if="detail.terminationVoucherUrl"><strong>协商凭证：</strong><span class="link"
                             @click="openAttachment(detail.terminationVoucherUrl)">点击查看</span></div>
                     <div v-if="detail.terminationVoucherNote"><strong>协商备注：</strong>{{ detail.terminationVoucherNote }}</div>
-                    <div v-if="detail.terminationAuditNote"><strong>审核备注：</strong>{{ detail.terminationAuditNote }}</div>
+                    <div v-if="detail.terminationCounterpartyRejectReason"><strong>{{ counterpartyReplyLabel(detail) }}：</strong>{{ detail.terminationCounterpartyRejectReason }}</div>
+                    <div v-if="detail.terminationAuditNote"><strong>管理员审核意见：</strong>{{ detail.terminationAuditNote }}</div>
                     <div v-if="detail.terminationRefundVoucherUrl"><strong>退押凭证：</strong><span class="link"
                             @click="openAttachment(detail.terminationRefundVoucherUrl)">点击查看</span></div>
                     <div v-if="detail.terminationRefundVoucherNote"><strong>退押说明：</strong>{{ detail.terminationRefundVoucherNote }}</div>
@@ -101,7 +98,7 @@ import AutoInput from "@/components/AutoInput.vue";
 import Tab from "@/components/Tab.vue";
 import StatusFlow from "@/components/StatusFlow.vue";
 
-const TERMINATION_STATUSES = [9, 10, 11, 12, 13];
+const TERMINATION_STATUSES = [9, 10, 11, 12, 13, 14];
 
 export default {
     components: { AutoInput, Tab, StatusFlow },
@@ -109,7 +106,8 @@ export default {
         return {
             statusTabs: [
                 { label: '全部', value: 'null' },
-                { label: '退租申请中', value: '9' },
+                { label: '待对方确认', value: '14' },
+                { label: '待提交结算', value: '9' },
                 { label: '待退租审核', value: '10' },
                 { label: '待退押', value: '11' },
                 { label: '待审核退押', value: '12' },
@@ -144,11 +142,12 @@ export default {
                 2: { text: "待租客确认", icon: "el-icon-time", color: "#409EFF", status: "process" },
                 3: { text: "待支付押金", icon: "el-icon-wallet", color: "#E6A23C", status: "process" },
                 4: { text: "已生效", icon: "el-icon-success", color: "#67C23A", status: "success" },
-                9: { text: "退租申请中", icon: "el-icon-warning-outline", color: "#E6A23C", status: "process" },
+                9: { text: "待提交退租结算", icon: "el-icon-edit-outline", color: "#E6A23C", status: "process" },
                 10: { text: "待退租审核", icon: "el-icon-s-check", color: "#409EFF", status: "process" },
                 11: { text: "待退押", icon: "el-icon-money", color: "#E6A23C", status: "process" },
                 12: { text: "待审核退押", icon: "el-icon-s-check", color: "#409EFF", status: "process" },
-                13: { text: "已退租", icon: "el-icon-circle-check", color: "#67C23A", status: "success" }
+                13: { text: "已退租", icon: "el-icon-circle-check", color: "#67C23A", status: "success" },
+                14: { text: "待对方确认退租", icon: "el-icon-user", color: "#E6A23C", status: "process" }
             }
         };
     },
@@ -163,6 +162,18 @@ export default {
             if (status === 13) return 'success';
             if ([9, 10, 11, 12].includes(status)) return 'warning';
             return 'info';
+        },
+        applicantRoleText(row) {
+            return row && row.terminationApplyUserId === row.tenantUserId ? '租客' : '房东';
+        },
+        counterpartyRoleText(row) {
+            return this.applicantRoleText(row) === '租客' ? '房东' : '租客';
+        },
+        applyReasonLabel(row) {
+            return `${this.applicantRoleText(row)}申请原因`;
+        },
+        counterpartyReplyLabel(row) {
+            return `${this.counterpartyRoleText(row)}回复`;
         },
         openAttachment(url) {
             const backendOrigin = new URL(this.$axios.defaults.baseURL).origin;

@@ -23,4 +23,19 @@ public class HouseOrderEvaluationsQueryDto extends QueryDto{
      * 房屋预约看房订单ID列表
      */
     private List<Integer> houseOrderInfoIds;
+
+    /**
+     * 审核状态
+     */
+    private Integer status;
+
+    /**
+     * 评价内容
+     */
+    private String text;
+
+    /**
+     * 仅看有举报内容
+     */
+    private Boolean reportedOnly;
 }

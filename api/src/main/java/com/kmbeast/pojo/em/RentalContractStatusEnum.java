@@ -18,11 +18,12 @@ public enum RentalContractStatusEnum {
     STATUS_6(6, "已拒绝"),
     STATUS_7(7, "已取消"),
     STATUS_8(8, "已到期"),
-    STATUS_9(9, "退租申请中"),
+    STATUS_9(9, "待提交退租结算"),
     STATUS_10(10, "待退租审核"),
     STATUS_11(11, "待退押"),
     STATUS_12(12, "待审核退押"),
-    STATUS_13(13, "已退租");
+    STATUS_13(13, "已退租"),
+    STATUS_14(14, "待对方确认退租");
 
     private final Integer type;
 

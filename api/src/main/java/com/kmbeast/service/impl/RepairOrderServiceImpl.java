@@ -215,6 +215,7 @@ public class RepairOrderServiceImpl extends ServiceImpl<RepairOrderMapper, Repai
 
     private boolean canCreateRepair(Integer contractStatus) {
         return Objects.equals(contractStatus, RentalContractStatusEnum.STATUS_4.getType())
+                || Objects.equals(contractStatus, RentalContractStatusEnum.STATUS_14.getType())
                 || Objects.equals(contractStatus, RentalContractStatusEnum.STATUS_9.getType())
                 || Objects.equals(contractStatus, RentalContractStatusEnum.STATUS_10.getType())
                 || Objects.equals(contractStatus, RentalContractStatusEnum.STATUS_11.getType())

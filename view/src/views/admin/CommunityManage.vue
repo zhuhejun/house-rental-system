@@ -181,7 +181,6 @@
 </template>
 
 <script>
-// B站 「程序辰星」原创出品
 import AutoInput from "@/components/AutoInput.vue"; // 自己封装好的输入框组件
 import Tab from "@/components/Tab.vue";
 import Editor from "@/components/Editor.vue";

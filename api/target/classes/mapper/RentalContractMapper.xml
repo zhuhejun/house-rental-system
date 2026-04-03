@@ -22,18 +22,19 @@
                rc.status,
                rc.reject_reason,
                rc.cancel_reason,
-               rc.termination_reason,
-               rc.termination_apply_user_id,
-               rc.termination_refund_amount,
-               rc.termination_voucher_url,
-               rc.termination_voucher_note,
-               rc.termination_audit_note,
-               rc.termination_refund_voucher_url,
-               rc.termination_refund_voucher_note,
+               COALESCE(rt.apply_reason, rc.termination_reason) AS termination_reason,
+               COALESCE(rt.apply_user_id, rc.termination_apply_user_id) AS termination_apply_user_id,
+               COALESCE(rt.refund_amount, rc.termination_refund_amount) AS termination_refund_amount,
+               COALESCE(rt.settlement_voucher_url, rc.termination_voucher_url) AS termination_voucher_url,
+               COALESCE(rt.settlement_voucher_note, rc.termination_voucher_note) AS termination_voucher_note,
+               COALESCE(rt.counterparty_reject_reason, rc.termination_counterparty_reject_reason) AS termination_counterparty_reject_reason,
+               COALESCE(rt.admin_audit_note, rc.termination_audit_note) AS termination_audit_note,
+               COALESCE(rt.refund_voucher_url, rc.termination_refund_voucher_url) AS termination_refund_voucher_url,
+               COALESCE(rt.refund_voucher_note, rc.termination_refund_voucher_note) AS termination_refund_voucher_note,
                rc.confirm_time,
-               rc.termination_apply_time,
-               rc.termination_audit_time,
-               rc.termination_refund_time,
+               COALESCE(rt.apply_time, rc.termination_apply_time) AS termination_apply_time,
+               COALESCE(rt.admin_audit_time, rc.termination_audit_time) AS termination_audit_time,
+               COALESCE(rt.refund_time, rc.termination_refund_time) AS termination_refund_time,
                rc.create_time,
                rc.update_time,
                h.name AS house_name,
@@ -45,6 +46,15 @@
         LEFT JOIN landlord l ON l.id = rc.landlord_id
         LEFT JOIN user lu ON lu.id = l.user_id
         LEFT JOIN user tu ON tu.id = rc.tenant_user_id
+        LEFT JOIN (
+            SELECT rt1.*
+            FROM rental_termination rt1
+            INNER JOIN (
+                SELECT rental_contract_id, MAX(id) AS max_id
+                FROM rental_termination
+                GROUP BY rental_contract_id
+            ) rt2 ON rt1.id = rt2.max_id
+        ) rt ON rt.rental_contract_id = rc.id
         <where>
             <if test="keyword != null and keyword != ''">
                 AND (
@@ -141,18 +151,19 @@
                rc.status,
                rc.reject_reason,
                rc.cancel_reason,
-               rc.termination_reason,
-               rc.termination_apply_user_id,
-               rc.termination_refund_amount,
-               rc.termination_voucher_url,
-               rc.termination_voucher_note,
-               rc.termination_audit_note,
-               rc.termination_refund_voucher_url,
-               rc.termination_refund_voucher_note,
+               COALESCE(rt.apply_reason, rc.termination_reason) AS termination_reason,
+               COALESCE(rt.apply_user_id, rc.termination_apply_user_id) AS termination_apply_user_id,
+               COALESCE(rt.refund_amount, rc.termination_refund_amount) AS termination_refund_amount,
+               COALESCE(rt.settlement_voucher_url, rc.termination_voucher_url) AS termination_voucher_url,
+               COALESCE(rt.settlement_voucher_note, rc.termination_voucher_note) AS termination_voucher_note,
+               COALESCE(rt.counterparty_reject_reason, rc.termination_counterparty_reject_reason) AS termination_counterparty_reject_reason,
+               COALESCE(rt.admin_audit_note, rc.termination_audit_note) AS termination_audit_note,
+               COALESCE(rt.refund_voucher_url, rc.termination_refund_voucher_url) AS termination_refund_voucher_url,
+               COALESCE(rt.refund_voucher_note, rc.termination_refund_voucher_note) AS termination_refund_voucher_note,
                rc.confirm_time,
-               rc.termination_apply_time,
-               rc.termination_audit_time,
-               rc.termination_refund_time,
+               COALESCE(rt.apply_time, rc.termination_apply_time) AS termination_apply_time,
+               COALESCE(rt.admin_audit_time, rc.termination_audit_time) AS termination_audit_time,
+               COALESCE(rt.refund_time, rc.termination_refund_time) AS termination_refund_time,
                rc.create_time,
                rc.update_time,
                h.name AS house_name,
@@ -164,6 +175,15 @@
         LEFT JOIN landlord l ON l.id = rc.landlord_id
         LEFT JOIN user lu ON lu.id = l.user_id
         LEFT JOIN user tu ON tu.id = rc.tenant_user_id
+        LEFT JOIN (
+            SELECT rt1.*
+            FROM rental_termination rt1
+            INNER JOIN (
+                SELECT rental_contract_id, MAX(id) AS max_id
+                FROM rental_termination
+                GROUP BY rental_contract_id
+            ) rt2 ON rt1.id = rt2.max_id
+        ) rt ON rt.rental_contract_id = rc.id
         WHERE rc.id = #{id}
     </select>
 
@@ -171,7 +191,7 @@
         SELECT COUNT(*)
         FROM rental_contract
         WHERE house_id = #{houseId}
-          AND status IN (1, 2, 3, 4, 9, 10, 11, 12)
+          AND status IN (1, 2, 3, 4, 9, 10, 11, 12, 14)
         <if test="excludeId != null">
             AND id != #{excludeId}
         </if>
@@ -208,6 +228,7 @@
         <result column="termination_refund_amount" property="terminationRefundAmount"/>
         <result column="termination_voucher_url" property="terminationVoucherUrl"/>
         <result column="termination_voucher_note" property="terminationVoucherNote"/>
+        <result column="termination_counterparty_reject_reason" property="terminationCounterpartyRejectReason"/>
         <result column="termination_audit_note" property="terminationAuditNote"/>
         <result column="termination_refund_voucher_url" property="terminationRefundVoucherUrl"/>
         <result column="termination_refund_voucher_note" property="terminationRefundVoucherNote"/>

@@ -20,6 +20,8 @@ public class CommentChildVO {
     private Boolean replyInputStatus; // 评论回复状态
     private Boolean upvoteFlag; //用户是否已经点赞
     private Integer upvoteCount; //点赞量
+    private Integer status; //审核状态
+    private Integer reportCount; //举报次数
     private String contentType; //内容类型
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createTime; //评论时间

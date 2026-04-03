@@ -8,6 +8,8 @@ my-server:
   api-context-path: /api/v1.0/house-rental-api
 #MySQL与文件上传限制配置
 spring:
+  config:
+    import: optional:file:./local-secrets.yml
   servlet:
     multipart:
       max-file-size: 10MB

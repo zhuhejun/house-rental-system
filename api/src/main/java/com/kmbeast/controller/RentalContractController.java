@@ -69,6 +69,18 @@ public class RentalContractController {
         return rentalContractService.applyTerminate(rentalContract);
     }
 
+    @PutMapping(value = "/confirmTerminate/{id}")
+    @ResponseBody
+    public Result<String> confirmTerminate(@PathVariable Integer id) {
+        return rentalContractService.confirmTerminate(id);
+    }
+
+    @PutMapping(value = "/rejectTerminate")
+    @ResponseBody
+    public Result<String> rejectTerminate(@RequestBody RentalContract rentalContract) {
+        return rentalContractService.rejectTerminate(rentalContract);
+    }
+
     @PutMapping(value = "/submitTerminateSettlement")
     @ResponseBody
     public Result<String> submitTerminateSettlement(@RequestBody RentalContract rentalContract) {

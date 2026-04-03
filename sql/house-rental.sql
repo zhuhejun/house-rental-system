@@ -2181,37 +2181,41 @@ CREATE TABLE `evaluations`  (
   `content_type` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '内容类型',
   `content_id` int(11) NULL DEFAULT NULL COMMENT '内容ID',
   `content` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '评论内容',
+  `status` int(11) NOT NULL DEFAULT 1 COMMENT '审核状态（1：正常；2：待审核；3：已屏蔽）',
   `create_time` datetime NULL DEFAULT NULL COMMENT '评论时间',
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 53 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin ROW_FORMAT = DYNAMIC;
 
+-- 评论表增量 SQL（已有库请单独执行，不要重跑整份文件）
+-- ALTER TABLE `evaluations` ADD COLUMN `status` int(11) NOT NULL DEFAULT 1 COMMENT '审核状态（1：正常；2：待审核；3：已屏蔽）' AFTER `content`;
+
 -- ----------------------------
 -- Records of evaluations
 -- ----------------------------
-INSERT INTO `evaluations` VALUES (1, NULL, 8, NULL, 'SCENIC', 11, '我仿佛听见了雪山的心跳，低沉而有力', '2025-04-23 13:39:05');
-INSERT INTO `evaluations` VALUES (9, 7, 21, NULL, 'TEST', 1, '54534543', '2025-05-15 17:42:28');
-INSERT INTO `evaluations` VALUES (17, 11, 21, 21, 'TEST', 1, '自己的样式', '2025-05-15 17:46:42');
-INSERT INTO `evaluations` VALUES (18, 11, 21, 21, 'TEST', 1, '自己的样式', '2025-05-15 17:46:43');
-INSERT INTO `evaluations` VALUES (20, 11, 21, 21, 'TEST', 1, '765756', '2025-05-15 17:48:17');
-INSERT INTO `evaluations` VALUES (21, 11, 21, 21, 'TEST', 1, '543534543', '2025-05-15 17:55:43');
-INSERT INTO `evaluations` VALUES (23, NULL, 21, NULL, 'TEST', 1, '你好', '2025-05-15 18:20:07');
-INSERT INTO `evaluations` VALUES (27, 25, 37, NULL, 'TEST', 1, '真的假的？', '2025-05-15 22:20:07');
-INSERT INTO `evaluations` VALUES (28, 25, 37, 21, 'TEST', 1, '当然保真', '2025-05-15 22:20:24');
-INSERT INTO `evaluations` VALUES (29, NULL, 37, NULL, 'TEST', 1, '这是不是真的', '2025-05-15 22:26:26');
-INSERT INTO `evaluations` VALUES (32, 31, 21, NULL, 'TEST', 1, 'huifu a', '2025-05-15 23:16:31');
-INSERT INTO `evaluations` VALUES (34, NULL, 59, NULL, 'HOUSE_INFO', 1, '900一个月，小区良好，环境优美', '2025-07-10 21:03:16');
-INSERT INTO `evaluations` VALUES (35, 34, 59, NULL, 'HOUSE_INFO', 1, '900一个月，小区良好，环境优美', '2025-07-10 21:03:20');
-INSERT INTO `evaluations` VALUES (40, NULL, 59, NULL, 'HOUSE_INFO', 2, '但是', '2025-07-10 21:38:58');
-INSERT INTO `evaluations` VALUES (41, NULL, 59, NULL, 'HOUSE_INFO', NULL, '件监听器未正确移除​​：可能导', '2025-07-14 18:14:23');
-INSERT INTO `evaluations` VALUES (42, NULL, 59, NULL, 'HOUSE_NEWS_INFO', 1, '的代码在 beforeunload 事件处理中存在几个问题，导致停留时间计算不生效。以下是完整的。问题分析​​事件监听器未正确移除​​：可能导致内存泄漏', '2025-07-14 18:15:01');
-INSERT INTO `evaluations` VALUES (43, NULL, 59, NULL, 'NOTICE', 1, '短暂无法访问的情况，建议您提前保存数据。', '2025-07-18 16:50:56');
-INSERT INTO `evaluations` VALUES (44, NULL, 61, NULL, 'HOUSE_INFO', 3, 'B站【程序员辰星】原创出品！', '2025-07-19 18:02:14');
-INSERT INTO `evaluations` VALUES (45, 44, 59, NULL, 'HOUSE_INFO', 3, '我明白了，是B站【程序员辰星】的原创作品。', '2025-07-19 18:03:02');
-INSERT INTO `evaluations` VALUES (46, NULL, 63, NULL, 'HOUSE_INFO', 1, '测试评论', '2025-07-21 22:33:44');
-INSERT INTO `evaluations` VALUES (48, 34, 63, NULL, 'HOUSE_INFO', 1, '回复', '2025-07-21 22:34:33');
-INSERT INTO `evaluations` VALUES (49, 46, 59, NULL, 'HOUSE_INFO', 1, 'fdsfdsfd', '2025-07-22 15:57:48');
-INSERT INTO `evaluations` VALUES (51, 50, 59, NULL, 'COMMUNITY', 5, '654645', '2025-07-22 16:00:06');
-INSERT INTO `evaluations` VALUES (52, NULL, 59, NULL, 'HOUSE_INFO', 1, '你真**', '2025-07-22 16:07:57');
+INSERT INTO `evaluations` VALUES (1, NULL, 8, NULL, 'SCENIC', 11, '我仿佛听见了雪山的心跳，低沉而有力', 1, '2025-04-23 13:39:05');
+INSERT INTO `evaluations` VALUES (9, 7, 21, NULL, 'TEST', 1, '54534543', 1, '2025-05-15 17:42:28');
+INSERT INTO `evaluations` VALUES (17, 11, 21, 21, 'TEST', 1, '自己的样式', 1, '2025-05-15 17:46:42');
+INSERT INTO `evaluations` VALUES (18, 11, 21, 21, 'TEST', 1, '自己的样式', 1, '2025-05-15 17:46:43');
+INSERT INTO `evaluations` VALUES (20, 11, 21, 21, 'TEST', 1, '765756', 1, '2025-05-15 17:48:17');
+INSERT INTO `evaluations` VALUES (21, 11, 21, 21, 'TEST', 1, '543534543', 1, '2025-05-15 17:55:43');
+INSERT INTO `evaluations` VALUES (23, NULL, 21, NULL, 'TEST', 1, '你好', 1, '2025-05-15 18:20:07');
+INSERT INTO `evaluations` VALUES (27, 25, 37, NULL, 'TEST', 1, '真的假的？', 1, '2025-05-15 22:20:07');
+INSERT INTO `evaluations` VALUES (28, 25, 37, 21, 'TEST', 1, '当然保真', 1, '2025-05-15 22:20:24');
+INSERT INTO `evaluations` VALUES (29, NULL, 37, NULL, 'TEST', 1, '这是不是真的', 1, '2025-05-15 22:26:26');
+INSERT INTO `evaluations` VALUES (32, 31, 21, NULL, 'TEST', 1, 'huifu a', 1, '2025-05-15 23:16:31');
+INSERT INTO `evaluations` VALUES (34, NULL, 59, NULL, 'HOUSE_INFO', 1, '900一个月，小区良好，环境优美', 1, '2025-07-10 21:03:16');
+INSERT INTO `evaluations` VALUES (35, 34, 59, NULL, 'HOUSE_INFO', 1, '900一个月，小区良好，环境优美', 1, '2025-07-10 21:03:20');
+INSERT INTO `evaluations` VALUES (40, NULL, 59, NULL, 'HOUSE_INFO', 2, '但是', 1, '2025-07-10 21:38:58');
+INSERT INTO `evaluations` VALUES (41, NULL, 59, NULL, 'HOUSE_INFO', NULL, '件监听器未正确移除​​：可能导', 1, '2025-07-14 18:14:23');
+INSERT INTO `evaluations` VALUES (42, NULL, 59, NULL, 'HOUSE_NEWS_INFO', 1, '的代码在 beforeunload 事件处理中存在几个问题，导致停留时间计算不生效。以下是完整的。问题分析​​事件监听器未正确移除​​：可能导致内存泄漏', 1, '2025-07-14 18:15:01');
+INSERT INTO `evaluations` VALUES (43, NULL, 59, NULL, 'NOTICE', 1, '短暂无法访问的情况，建议您提前保存数据。', 1, '2025-07-18 16:50:56');
+INSERT INTO `evaluations` VALUES (44, NULL, 61, NULL, 'HOUSE_INFO', 3, 'B站【程序员辰星】原创出品！', 1, '2025-07-19 18:02:14');
+INSERT INTO `evaluations` VALUES (45, 44, 59, NULL, 'HOUSE_INFO', 3, '我明白了，是B站【程序员辰星】的原创作品。', 1, '2025-07-19 18:03:02');
+INSERT INTO `evaluations` VALUES (46, NULL, 63, NULL, 'HOUSE_INFO', 1, '测试评论', 1, '2025-07-21 22:33:44');
+INSERT INTO `evaluations` VALUES (48, 34, 63, NULL, 'HOUSE_INFO', 1, '回复', 1, '2025-07-21 22:34:33');
+INSERT INTO `evaluations` VALUES (49, 46, 59, NULL, 'HOUSE_INFO', 1, 'fdsfdsfd', 1, '2025-07-22 15:57:48');
+INSERT INTO `evaluations` VALUES (51, 50, 59, NULL, 'COMMUNITY', 5, '654645', 1, '2025-07-22 16:00:06');
+INSERT INTO `evaluations` VALUES (52, NULL, 59, NULL, 'HOUSE_INFO', 1, '你真**', 1, '2025-07-22 16:07:57');
 
 -- ----------------------------
 -- Table structure for evaluations_upvote
@@ -3675,15 +3679,48 @@ CREATE TABLE `house_order_evaluations`  (
   `house_order_info_id` int(11) NULL DEFAULT NULL COMMENT '房屋预约看房订单ID，外键，关联的是房屋预约看房订单',
   `text` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '评论词',
   `score` int(1) NULL DEFAULT NULL COMMENT '评分',
+  `status` int(11) NOT NULL DEFAULT 1 COMMENT '审核状态（1：正常；2：待审核；3：已屏蔽）',
   `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin COMMENT = '房屋预约看房评价信息表' ROW_FORMAT = Dynamic;
 
+-- 服务评价表增量 SQL（已有库请单独执行，不要重跑整份文件）
+-- ALTER TABLE `house_order_evaluations` ADD COLUMN `status` int(11) NOT NULL DEFAULT 1 COMMENT '审核状态（1：正常；2：待审核；3：已屏蔽）' AFTER `score`;
+
+-- ----------------------------
+-- Table structure for content_report
+-- ----------------------------
+DROP TABLE IF EXISTS `content_report`;
+CREATE TABLE `content_report`  (
+  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '内容举报主键ID',
+  `target_type` int(11) NOT NULL COMMENT '举报对象类型（1：普通评论；2：服务评价）',
+  `target_id` int(11) NOT NULL COMMENT '举报对象ID',
+  `reporter_id` int(11) NOT NULL COMMENT '举报人用户ID',
+  `reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '举报原因',
+  `status` int(11) NOT NULL DEFAULT 1 COMMENT '处理状态（1：待处理；2：已处理）',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin COMMENT = '内容举报表' ROW_FORMAT = Dynamic;
+
+-- 举报表增量 SQL（已有库请单独执行，不要重跑整份文件）
+-- CREATE TABLE `content_report`  (
+--   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '内容举报主键ID',
+--   `target_type` int(11) NOT NULL COMMENT '举报对象类型（1：普通评论；2：服务评价）',
+--   `target_id` int(11) NOT NULL COMMENT '举报对象ID',
+--   `reporter_id` int(11) NOT NULL COMMENT '举报人用户ID',
+--   `reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '举报原因',
+--   `status` int(11) NOT NULL DEFAULT 1 COMMENT '处理状态（1：待处理；2：已处理）',
+--   `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+--   PRIMARY KEY (`id`) USING BTREE
+-- ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin COMMENT = '内容举报表' ROW_FORMAT = Dynamic;
+-- ALTER TABLE `content_report` ADD COLUMN `status` int(11) NOT NULL DEFAULT 1 COMMENT '处理状态（1：待处理；2：已处理）' AFTER `reason`;
+-- UPDATE `content_report` SET `status` = 1 WHERE `status` IS NULL;
+
 -- ----------------------------
 -- Records of house_order_evaluations
 -- ----------------------------
-INSERT INTO `house_order_evaluations` VALUES (2, 61, 7, '房东超级好讲，太赞了！！！', 5, '2025-07-19 17:02:44');
-INSERT INTO `house_order_evaluations` VALUES (3, 59, 3, '挺好的！', 4, '2025-07-20 15:26:58');
+INSERT INTO `house_order_evaluations` VALUES (2, 61, 7, '房东超级好讲，太赞了！！！', 5, 1, '2025-07-19 17:02:44');
+INSERT INTO `house_order_evaluations` VALUES (3, 59, 3, '挺好的！', 4, 1, '2025-07-20 15:26:58');
 
 -- ----------------------------
 -- Table structure for house_order_info
@@ -3855,6 +3892,7 @@ CREATE TABLE `rental_contract`  (
   `termination_refund_amount` decimal(10, 2) NULL DEFAULT NULL COMMENT '退还押金金额',
   `termination_voucher_url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL COMMENT '退押凭证',
   `termination_voucher_note` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '退押备注',
+  `termination_counterparty_reject_reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '对方拒绝退租原因',
   `termination_audit_note` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '退租审核备注',
   `termination_refund_voucher_url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL COMMENT '实际退押凭证',
   `termination_refund_voucher_note` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '实际退押说明',
@@ -3892,7 +3930,8 @@ CREATE TABLE `rental_contract_status`  (
 -- ALTER TABLE `rental_contract` ADD COLUMN `termination_refund_amount` decimal(10,2) NULL DEFAULT NULL COMMENT '退还押金金额' AFTER `termination_apply_user_id`;
 -- ALTER TABLE `rental_contract` ADD COLUMN `termination_voucher_url` text NULL COMMENT '退押凭证' AFTER `termination_refund_amount`;
 -- ALTER TABLE `rental_contract` ADD COLUMN `termination_voucher_note` varchar(255) NULL DEFAULT NULL COMMENT '退押备注' AFTER `termination_voucher_url`;
--- ALTER TABLE `rental_contract` ADD COLUMN `termination_audit_note` varchar(255) NULL DEFAULT NULL COMMENT '退租审核备注' AFTER `termination_voucher_note`;
+-- ALTER TABLE `rental_contract` ADD COLUMN `termination_counterparty_reject_reason` varchar(255) NULL DEFAULT NULL COMMENT '对方拒绝退租原因' AFTER `termination_voucher_note`;
+-- ALTER TABLE `rental_contract` ADD COLUMN `termination_audit_note` varchar(255) NULL DEFAULT NULL COMMENT '退租审核备注' AFTER `termination_counterparty_reject_reason`;
 -- ALTER TABLE `rental_contract` ADD COLUMN `termination_refund_voucher_url` text NULL COMMENT '实际退押凭证' AFTER `termination_audit_note`;
 -- ALTER TABLE `rental_contract` ADD COLUMN `termination_refund_voucher_note` varchar(255) NULL DEFAULT NULL COMMENT '实际退押说明' AFTER `termination_refund_voucher_url`;
 -- ALTER TABLE `rental_contract` ADD COLUMN `termination_apply_time` datetime NULL DEFAULT NULL COMMENT '退租申请时间' AFTER `confirm_time`;
@@ -3915,6 +3954,60 @@ CREATE TABLE `rental_contract_status`  (
 -- ----------------------------
 -- Table structure for rental_bill
 -- ----------------------------
+DROP TABLE IF EXISTS `rental_termination`;
+CREATE TABLE `rental_termination`  (
+  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '退租申请主键ID',
+  `rental_contract_id` int(11) NOT NULL COMMENT '租赁合同ID',
+  `house_id` int(11) NOT NULL COMMENT '房源ID',
+  `landlord_id` int(11) NOT NULL COMMENT '房东ID',
+  `tenant_user_id` int(11) NOT NULL COMMENT '租客用户ID',
+  `apply_user_id` int(11) NOT NULL COMMENT '申请人用户ID',
+  `apply_reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '申请原因',
+  `counterparty_user_id` int(11) NULL DEFAULT NULL COMMENT '对方处理人用户ID',
+  `counterparty_reject_reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '对方拒绝原因',
+  `refund_amount` decimal(10, 2) NULL DEFAULT NULL COMMENT '协商退押金额',
+  `settlement_voucher_url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL COMMENT '退租结算凭证',
+  `settlement_voucher_note` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '退租结算备注',
+  `admin_audit_note` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '管理员审核意见',
+  `refund_voucher_url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL COMMENT '退押凭证',
+  `refund_voucher_note` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '退押备注',
+  `status` int(11) NOT NULL COMMENT '退租申请状态：14待对方确认 9待提交退租结算 10待退租审核 11待退押 12待审核退押 13已退租 15已被对方拒绝',
+  `apply_time` datetime NULL DEFAULT NULL COMMENT '申请时间',
+  `counterparty_decision_time` datetime NULL DEFAULT NULL COMMENT '对方处理时间',
+  `admin_audit_time` datetime NULL DEFAULT NULL COMMENT '管理员审核时间',
+  `refund_time` datetime NULL DEFAULT NULL COMMENT '退押凭证提交时间',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin COMMENT = '退租申请表' ROW_FORMAT = Dynamic;
+
+-- 退租申请表增量 SQL（已有库请单独执行，不要重跑整份文件）
+-- CREATE TABLE `rental_termination`  (
+--   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '退租申请主键ID',
+--   `rental_contract_id` int(11) NOT NULL COMMENT '租赁合同ID',
+--   `house_id` int(11) NOT NULL COMMENT '房源ID',
+--   `landlord_id` int(11) NOT NULL COMMENT '房东ID',
+--   `tenant_user_id` int(11) NOT NULL COMMENT '租客用户ID',
+--   `apply_user_id` int(11) NOT NULL COMMENT '申请人用户ID',
+--   `apply_reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '申请原因',
+--   `counterparty_user_id` int(11) NULL DEFAULT NULL COMMENT '对方处理人用户ID',
+--   `counterparty_reject_reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '对方拒绝原因',
+--   `refund_amount` decimal(10, 2) NULL DEFAULT NULL COMMENT '协商退押金额',
+--   `settlement_voucher_url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL COMMENT '退租结算凭证',
+--   `settlement_voucher_note` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '退租结算备注',
+--   `admin_audit_note` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '管理员审核意见',
+--   `refund_voucher_url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL COMMENT '退押凭证',
+--   `refund_voucher_note` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '退押备注',
+--   `status` int(11) NOT NULL COMMENT '退租申请状态：14待对方确认 9待提交退租结算 10待退租审核 11待退押 12待审核退押 13已退租 15已被对方拒绝',
+--   `apply_time` datetime NULL DEFAULT NULL COMMENT '申请时间',
+--   `counterparty_decision_time` datetime NULL DEFAULT NULL COMMENT '对方处理时间',
+--   `admin_audit_time` datetime NULL DEFAULT NULL COMMENT '管理员审核时间',
+--   `refund_time` datetime NULL DEFAULT NULL COMMENT '退押凭证提交时间',
+--   `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+--   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+--   PRIMARY KEY (`id`) USING BTREE
+-- ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin COMMENT = '退租申请表' ROW_FORMAT = Dynamic;
+
 DROP TABLE IF EXISTS `rental_bill`;
 CREATE TABLE `rental_bill`  (
   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '租赁账单主键ID',

@@ -39,14 +39,14 @@ export default {
 <style scoped lang="scss">
 .floating-ai-entry {
     position: fixed;
-    right: 24px;
-    bottom: 28px;
-    z-index: 3000;
+    right: 20px;
+    bottom: 24px;
+    z-index: 1200;
     display: flex;
     align-items: center;
     gap: 12px;
-    min-width: 188px;
-    padding: 14px 16px;
+    min-width: 176px;
+    padding: 12px 14px;
     border-radius: 18px;
     background: linear-gradient(135deg, #5f9f22, #7dc338);
     color: #fff;
@@ -61,8 +61,8 @@ export default {
 }
 
 .icon-wrap {
-    width: 42px;
-    height: 42px;
+    width: 40px;
+    height: 40px;
     border-radius: 14px;
     background: rgba(255, 255, 255, 0.18);
     display: flex;
@@ -76,24 +76,24 @@ export default {
 }
 
 .title {
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 700;
     line-height: 1.2;
 }
 
 .subtitle {
     margin-top: 4px;
-    font-size: 12px;
+    font-size: 11px;
     opacity: 0.92;
     line-height: 1.2;
 }
 
 @media (max-width: 768px) {
     .floating-ai-entry {
-        right: 16px;
-        bottom: 20px;
+        right: 14px;
+        bottom: 16px;
         min-width: auto;
-        padding: 12px 14px;
+        padding: 10px 12px;
         border-radius: 16px;
     }
 

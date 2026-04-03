@@ -44,6 +44,10 @@
                                     <i class="el-icon-delete"></i>
                                     <span>删除</span>
                                 </div>
+                                <div v-if="Number(comment.userId) !== Number(userId)" @click="reportContent(1, comment)">
+                                    <i class="el-icon-warning-outline"></i>
+                                    <span>举报</span>
+                                </div>
                                 <div @click="toggleReplyInput(comment)">
                                     <i class="el-icon-chat-round"></i>
                                     <span>{{ !comment.showReplyInput ? '回复' : '取消回复' }}</span>
@@ -99,6 +103,10 @@
                                         <div v-if="child.userId == userId" @click="showDeleteConfirm(child)">
                                             <i class="el-icon-delete"></i>
                                             <span>删除</span>
+                                        </div>
+                                        <div v-if="child.userId != userId" @click="reportContent(1, child)">
+                                            <i class="el-icon-warning-outline"></i>
+                                            <span>举报</span>
                                         </div>
                                         <div @click="toggleChildReplyInput(child)">
                                             <i class="el-icon-chat-round"></i>
@@ -229,6 +237,28 @@ export default {
             }).catch(err => {
                 console.error(`评论异常 -> `, err);
             })
+        },
+        reportContent(targetType, target) {
+            this.$prompt('请填写举报原因', '举报内容', {
+                confirmButtonText: '提交举报',
+                cancelButtonText: '取消',
+                inputPlaceholder: '例如：辱骂、广告、恶意刷屏、不实内容'
+            }).then(({ value }) => {
+                return this.$axios.post(`/content-report/save`, {
+                    targetType,
+                    targetId: target.id,
+                    reason: value
+                });
+            }).then((res) => {
+                if (res && res.code === 200) {
+                    this.showToast(res.message || '举报已提交', 'success');
+                }
+            }).catch((err) => {
+                if (err === 'cancel') {
+                    return;
+                }
+                this.showToast(err.message || '举报失败', 'error');
+            });
         },
         onFocus() {
             this.isFocused = true;

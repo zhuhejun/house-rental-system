@@ -130,6 +130,11 @@
                         </div>
                         <el-rate disabled v-model="houseOrderEvaluations[0].score" show-text></el-rate>
                     </div>
+                    <div style="margin-top: 12px;">
+                        <el-tag size="mini" :type="evaluationStatusType(houseOrderEvaluations[0])">
+                            {{ evaluationStatusText(houseOrderEvaluations[0]) }}
+                        </el-tag>
+                    </div>
                     <div class="evaluation-text">
                         {{ houseOrderEvaluations[0].text || '该用户暂未填写评价内容' }}
                     </div>
@@ -387,6 +392,21 @@ export default {
         handleCurrentChange(current) {
             this.houseOrderInfoQueryDto.current = current;
             this.fetchFreshData();
+        },
+        evaluationStatusText(evaluation) {
+            if (!evaluation || !evaluation.status) {
+                return '正常';
+            }
+            return evaluation.statusText || (evaluation.status === 2 ? '待审核' : evaluation.status === 3 ? '已屏蔽' : '正常');
+        },
+        evaluationStatusType(evaluation) {
+            if (!evaluation || !evaluation.status || evaluation.status === 1) {
+                return 'success';
+            }
+            if (evaluation.status === 2) {
+                return 'warning';
+            }
+            return 'danger';
         }
     },
 };

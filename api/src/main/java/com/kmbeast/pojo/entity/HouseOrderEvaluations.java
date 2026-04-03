@@ -45,5 +45,9 @@ public class HouseOrderEvaluations {
      */
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createTime;
+    /**
+     * 审核状态：1正常 2待审核 3已屏蔽
+     */
+    private Integer status;
 
 }

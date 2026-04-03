@@ -131,6 +131,10 @@
                                         </el-rate>
                                     </div>
                                 </div>
+                                <div v-if="Number(evaluations.userId) !== Number(userId)" class="evaluation-report"
+                                    @click="reportServiceEvaluation(evaluations)">
+                                    举报
+                                </div>
                             </div>
                             <div
                                 style="color: #666666;background-color: rgb(246,246,246);padding: 10px;font-size: 14px;">
@@ -398,6 +402,28 @@ export default {
                 console.error('查询预约看房服务评价失败:', e);
             }
         },
+        reportServiceEvaluation(evaluations) {
+            this.$prompt('请填写举报原因', '举报服务评价', {
+                confirmButtonText: '提交举报',
+                cancelButtonText: '取消',
+                inputPlaceholder: '例如：辱骂、广告、不实评价'
+            }).then(({ value }) => {
+                return this.$axios.post(`/content-report/save`, {
+                    targetType: 2,
+                    targetId: evaluations.id,
+                    reason: value
+                });
+            }).then(({ code, message }) => {
+                if (code === 200) {
+                    this.$message.success(message || '举报已提交');
+                }
+            }).catch((e) => {
+                if (e === 'cancel') {
+                    return;
+                }
+                this.$message.error(e.message || '举报失败');
+            });
+        },
         async fetchFutureDateSplit() {
             try {
                 const { data } = await this.$axios.get(`/house-order-info/split`);
@@ -579,6 +605,13 @@ export default {
     &:hover {
         background-color: rgb(240, 240, 240);
     }
+}
+
+.evaluation-report {
+    margin-left: auto;
+    color: #f56c6c;
+    cursor: pointer;
+    font-size: 13px;
 }
 
 .house-order-drawer {

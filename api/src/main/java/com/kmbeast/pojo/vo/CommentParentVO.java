@@ -21,6 +21,7 @@ public class CommentParentVO {
     private Integer childTotal; //一共拥有的子级评论数
     private Boolean upvoteFlag; //用户是否已经点赞
     private Integer upvoteCount; //点赞量
+    private Integer status; //审核状态
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createTime; //评论时间
     private List<CommentChildVO> commentChildVOS; //子级评论

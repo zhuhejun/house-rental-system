@@ -159,7 +159,6 @@
 </template>
 
 <script>
-// B站 「程序员辰星」原创出品
 import AutoInput from "@/components/AutoInput.vue"; // 导入封装好的输入框组件
 import Tab from "@/components/Tab" // 导入封装好的Tab组件
 export default {

@@ -1,9 +1,5 @@
 <template>
     <div class="container">
-        <div class="page-tip">
-            退租相关操作已独立到本页处理。房东可在这里发起退租、提交协商结果，以及在管理员通过后上传退押凭证。
-        </div>
-
         <div class="top-header">
             <div class="nav-left">
                 <Tab :buttons="statusTabs" initialActive="null" @change="handleChange" />
@@ -29,6 +25,8 @@
                     <div class="table-actions">
                         <span @click="showDetail(scope.row.id)">详情</span>
                         <span v-if="scope.row.status === 4" @click="openTerminateDialog(scope.row)">申请退租</span>
+                        <span v-if="canConfirmTerminate(scope.row)" @click="confirmTerminate(scope.row.id)">同意退租</span>
+                        <span v-if="canConfirmTerminate(scope.row)" @click="openTerminateRejectDialog(scope.row)">拒绝退租</span>
                         <span v-if="scope.row.status === 9" @click="openSettlementDialog(scope.row)">提交退租审核</span>
                         <span v-if="scope.row.status === 11" @click="openRefundDialog(scope.row)">上传退押凭证</span>
                     </div>
@@ -53,14 +51,15 @@
                     <div><strong>租期：</strong>{{ detail.startDate }} 至 {{ detail.endDate }}</div>
                     <div><strong>月租：</strong>{{ detail.monthlyRent }}</div>
                     <div><strong>原始押金：</strong>{{ detail.depositAmount }}</div>
-                    <div v-if="detail.terminationReason"><strong>退租原因：</strong>{{ detail.terminationReason }}</div>
+                    <div v-if="detail.terminationReason"><strong>{{ applyReasonLabel(detail) }}：</strong>{{ detail.terminationReason }}</div>
                     <div v-if="detail.terminationRefundAmount !== null && detail.terminationRefundAmount !== undefined">
                         <strong>协商退押金额：</strong>{{ detail.terminationRefundAmount }}
                     </div>
                     <div v-if="detail.terminationVoucherUrl"><strong>协商凭证：</strong><span class="link"
                             @click="openAttachment(detail.terminationVoucherUrl)">点击查看</span></div>
                     <div v-if="detail.terminationVoucherNote"><strong>协商备注：</strong>{{ detail.terminationVoucherNote }}</div>
-                    <div v-if="detail.terminationAuditNote"><strong>管理员意见：</strong>{{ detail.terminationAuditNote }}</div>
+                    <div v-if="detail.terminationCounterpartyRejectReason"><strong>{{ counterpartyReplyLabel(detail) }}：</strong>{{ detail.terminationCounterpartyRejectReason }}</div>
+                    <div v-if="detail.terminationAuditNote"><strong>管理员审核意见：</strong>{{ detail.terminationAuditNote }}</div>
                     <div v-if="detail.terminationRefundVoucherUrl"><strong>退押凭证：</strong><span class="link"
                             @click="openAttachment(detail.terminationRefundVoucherUrl)">点击查看</span></div>
                     <div v-if="detail.terminationRefundVoucherNote"><strong>退押说明：</strong>{{ detail.terminationRefundVoucherNote }}</div>
@@ -81,11 +80,23 @@
             </span>
         </el-dialog>
 
+        <el-dialog title="拒绝退租申请" :visible.sync="terminateRejectVisible" width="34%" :close-on-click-modal="false">
+            <div>
+                <p>*拒绝原因</p>
+                <el-input type="textarea" :rows="4" v-model="terminateRejectForm.terminationCounterpartyRejectReason"
+                    placeholder="请填写拒绝退租的原因"></el-input>
+            </div>
+            <span slot="footer" class="dialog-footer">
+                <span class="primary-bt" @click="terminateRejectVisible = false">取消</span>
+                <span class="info-bt" @click="submitTerminateReject">确认拒绝</span>
+            </span>
+        </el-dialog>
+
         <el-dialog title="提交退租审核" :visible.sync="settlementVisible" width="38%" :close-on-click-modal="false">
             <div>
                 <div class="calc-card" v-if="currentRow.id">
                     <div><strong>原始押金：</strong>{{ Number(currentRow.depositAmount || 0).toFixed(2) }}</div>
-                    <div><strong>管理员驳回意见：</strong>{{ currentRow.terminationAuditNote || '暂无' }}</div>
+                    <div><strong>上次管理员审核意见：</strong>{{ currentRow.terminationAuditNote || '暂无' }}</div>
                 </div>
                 <p>*退还押金金额</p>
                 <el-input-number v-model="settlementForm.terminationRefundAmount" :min="0" :precision="2" :step="100"
@@ -144,8 +155,9 @@
 import AutoInput from "@/components/AutoInput.vue";
 import Tab from "@/components/Tab.vue";
 import StatusFlow from "@/components/StatusFlow.vue";
+import { getUserInfo } from "@/utils/storage";
 
-const TERMINATION_STATUSES = [4, 9, 10, 11, 12, 13];
+const TERMINATION_STATUSES = [4, 9, 10, 11, 12, 13, 14];
 
 export default {
     components: { AutoInput, Tab, StatusFlow },
@@ -154,7 +166,8 @@ export default {
             statusTabs: [
                 { label: '全部', value: 'null' },
                 { label: '可申请退租', value: '4' },
-                { label: '退租申请中', value: '9' },
+                { label: '待对方确认', value: '14' },
+                { label: '待提交结算', value: '9' },
                 { label: '待退租审核', value: '10' },
                 { label: '待退押', value: '11' },
                 { label: '待审核退押', value: '12' },
@@ -173,14 +186,20 @@ export default {
             },
             detailVisible: false,
             terminateVisible: false,
+            terminateRejectVisible: false,
             settlementVisible: false,
             refundVisible: false,
             detail: {},
             statusList: [],
             currentRow: {},
+            currentUserId: null,
             terminateForm: {
                 id: null,
                 terminationReason: '',
+            },
+            terminateRejectForm: {
+                id: null,
+                terminationCounterpartyRejectReason: '',
             },
             settlementForm: {
                 id: null,
@@ -198,15 +217,18 @@ export default {
                 2: { text: "待租客确认", icon: "el-icon-time", color: "#409EFF", status: "process" },
                 3: { text: "待支付押金", icon: "el-icon-wallet", color: "#E6A23C", status: "process" },
                 4: { text: "已生效", icon: "el-icon-success", color: "#67C23A", status: "success" },
-                9: { text: "退租申请中", icon: "el-icon-warning-outline", color: "#E6A23C", status: "process" },
+                9: { text: "待提交退租结算", icon: "el-icon-edit-outline", color: "#E6A23C", status: "process" },
                 10: { text: "待退租审核", icon: "el-icon-s-check", color: "#409EFF", status: "process" },
                 11: { text: "待退押", icon: "el-icon-money", color: "#E6A23C", status: "process" },
                 12: { text: "待审核退押", icon: "el-icon-s-check", color: "#409EFF", status: "process" },
-                13: { text: "已退租", icon: "el-icon-circle-check", color: "#67C23A", status: "success" }
+                13: { text: "已退租", icon: "el-icon-circle-check", color: "#67C23A", status: "success" },
+                14: { text: "待对方确认退租", icon: "el-icon-user", color: "#E6A23C", status: "process" }
             }
         };
     },
     created() {
+        const userInfo = getUserInfo();
+        this.currentUserId = userInfo && userInfo.id ? userInfo.id : null;
         this.fetchFreshData();
     },
     methods: {
@@ -215,8 +237,23 @@ export default {
         },
         statusType(status) {
             if (status === 4 || status === 13) return 'success';
-            if ([9, 10, 11, 12].includes(status)) return 'warning';
+            if ([9, 10, 11, 12, 14].includes(status)) return 'warning';
             return 'info';
+        },
+        applicantRoleText(row) {
+            return row && row.terminationApplyUserId === row.tenantUserId ? '租客' : '房东';
+        },
+        counterpartyRoleText(row) {
+            return this.applicantRoleText(row) === '租客' ? '房东' : '租客';
+        },
+        applyReasonLabel(row) {
+            return `${this.applicantRoleText(row)}申请原因`;
+        },
+        counterpartyReplyLabel(row) {
+            return `${this.counterpartyRoleText(row)}回复`;
+        },
+        canConfirmTerminate(row) {
+            return row.status === 14 && this.currentUserId !== null && row.terminationApplyUserId !== this.currentUserId;
         },
         openAttachment(url) {
             const backendOrigin = new URL(this.$axios.defaults.baseURL).origin;
@@ -299,7 +336,7 @@ export default {
             this.currentRow = row;
             this.terminateForm = {
                 id: row.id,
-                terminationReason: row.terminationReason || '',
+                terminationReason: '',
             };
             this.terminateVisible = true;
         },
@@ -311,6 +348,33 @@ export default {
                 this.fetchFreshData();
             } catch (error) {
                 this.$message.error(error.message || '提交失败');
+            }
+        },
+        async confirmTerminate(id) {
+            try {
+                await this.$axios.put(`/rental-contract/confirmTerminate/${id}`);
+                this.$message.success('你已同意退租申请');
+                this.fetchFreshData();
+            } catch (error) {
+                this.$message.error(error.message || '操作失败');
+            }
+        },
+        openTerminateRejectDialog(row) {
+            this.currentRow = row;
+            this.terminateRejectForm = {
+                id: row.id,
+                terminationCounterpartyRejectReason: '',
+            };
+            this.terminateRejectVisible = true;
+        },
+        async submitTerminateReject() {
+            try {
+                await this.$axios.put('/rental-contract/rejectTerminate', this.terminateRejectForm);
+                this.$message.success('你已拒绝退租申请');
+                this.terminateRejectVisible = false;
+                this.fetchFreshData();
+            } catch (error) {
+                this.$message.error(error.message || '操作失败');
             }
         },
         openSettlementDialog(row) {

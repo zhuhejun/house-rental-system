@@ -287,11 +287,36 @@
     </select>
 
     <select id="cityHouseRange" resultType="com.kmbeast.pojo.vo.ChartVO">
-        SELECT a.name,
+        SELECT CASE city_name
+                   WHEN '上海' THEN '上海市'
+                   WHEN '北京' THEN '北京市'
+                   WHEN '天津' THEN '天津市'
+                   WHEN '重庆' THEN '重庆市'
+                   ELSE city_name
+                   END AS name,
                COUNT(h.id) AS count
         FROM house h
                  LEFT JOIN area a ON a.id = h.area_id
-        GROUP BY a.name
+                 LEFT JOIN area p ON p.id = a.parent_id
+                 LEFT JOIN area gp ON gp.id = p.parent_id
+                 LEFT JOIN (
+            SELECT h1.id,
+                   CASE
+                       WHEN a1.id IS NULL OR a1.name IS NULL OR TRIM(a1.name) = '' THEN '未设置地区'
+                       WHEN p1.id IS NULL THEN a1.name
+                       WHEN p1.parent_id = 0 THEN a1.name
+                       WHEN gp1.id IS NULL THEN p1.name
+                       WHEN gp1.parent_id = 0 THEN p1.name
+                       ELSE a1.name
+                       END AS city_name
+            FROM house h1
+                     LEFT JOIN area a1 ON a1.id = h1.area_id
+                     LEFT JOIN area p1 ON p1.id = a1.parent_id
+                     LEFT JOIN area gp1 ON gp1.id = p1.parent_id
+        ) city_scope ON city_scope.id = h.id
+        WHERE h.status = 1
+        GROUP BY name
+        ORDER BY COUNT(h.id) DESC, name ASC
         LIMIT #{limitCount}
     </select>
 

@@ -69,6 +69,8 @@ public class RentalContract {
 
     private String terminationVoucherNote;
 
+    private String terminationCounterpartyRejectReason;
+
     private String terminationAuditNote;
 
     private String terminationRefundVoucherUrl;

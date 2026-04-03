@@ -9,7 +9,9 @@
         hoe.house_order_info_id,
         hoe.text,
         hoe.score,
+        hoe.status,
         hoe.create_time,
+        (SELECT COUNT(*) FROM content_report cr WHERE cr.target_type = 2 AND cr.target_id = hoe.id) AS reportCount,
         u.username,
         u.avatar
         FROM house_order_evaluations hoe
@@ -26,6 +28,20 @@
                 <foreach collection="houseOrderInfoIds" item="houseOrderInfoId" separator="," open="(" close=")" index="index">
                     #{houseOrderInfoId}
                 </foreach>
+            </if>
+            <if test="text != null and text != ''">
+                AND hoe.text like concat('%',#{text},'%')
+            </if>
+            <if test="reportedOnly != null and reportedOnly">
+                AND EXISTS (
+                SELECT 1
+                FROM content_report cr
+                WHERE cr.target_type = 2
+                AND cr.target_id = hoe.id
+                )
+            </if>
+            <if test="status != null">
+                AND hoe.status = #{status}
             </if>
         </where>
         <if test="current != null and size != null">
@@ -45,6 +61,20 @@
             <if test="houseOrderInfoId != null">
                 AND hoe.house_order_info_id = #{houseOrderInfoId}
             </if>
+            <if test="text != null and text != ''">
+                AND hoe.text like concat('%',#{text},'%')
+            </if>
+            <if test="reportedOnly != null and reportedOnly">
+                AND EXISTS (
+                SELECT 1
+                FROM content_report cr
+                WHERE cr.target_type = 2
+                AND cr.target_id = hoe.id
+                )
+            </if>
+            <if test="status != null">
+                AND hoe.status = #{status}
+            </if>
         </where>
     </select>
 
@@ -57,6 +87,8 @@
         <result column="house_order_info_id" property="houseOrderInfoId"/>
         <result column="text" property="text"/>
         <result column="score" property="score"/>
+        <result column="status" property="status"/>
+        <result column="reportCount" property="reportCount"/>
         <result column="create_time" property="createTime"/>
     </resultMap>
 

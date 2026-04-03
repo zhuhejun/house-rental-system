@@ -1,21 +1,25 @@
 package com.kmbeast.service.impl;
 
 import com.kmbeast.context.LocalThreadHolder;
+import com.kmbeast.pojo.em.ContentModerationStatusEnum;
+import com.kmbeast.pojo.em.ContentReportTargetTypeEnum;
+import com.kmbeast.pojo.em.RoleEnum;
 import com.kmbeast.mapper.EvaluationsMapper;
 import com.kmbeast.mapper.EvaluationsUpvoteMapper;
-import com.kmbeast.mapper.UserMapper;
 import com.kmbeast.pojo.api.ApiResult;
 import com.kmbeast.pojo.api.Result;
 import com.kmbeast.pojo.dto.EvaluationsQueryDto;
+import com.kmbeast.pojo.entity.ContentReport;
 import com.kmbeast.pojo.entity.Evaluations;
 import com.kmbeast.pojo.entity.EvaluationsUpvote;
-import com.kmbeast.pojo.entity.User;
 import com.kmbeast.pojo.vo.CommentChildVO;
 import com.kmbeast.pojo.vo.CommentParentVO;
 import com.kmbeast.pojo.vo.EvaluationsVO;
+import com.kmbeast.service.ContentReportService;
 import com.kmbeast.service.EvaluationsService;
-import com.kmbeast.utils.AhoCorasickFilter;
 import com.kmbeast.utils.AssertUtils;
+import com.kmbeast.utils.ContentSafetyUtils;
+import com.kmbeast.utils.SubmissionThrottleUtils;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -34,9 +38,9 @@ public class EvaluationsServiceImpl implements EvaluationsService {
     @Resource
     private EvaluationsMapper evaluationsMapper;
     @Resource
-    private UserMapper userMapper;
-    @Resource
     private EvaluationsUpvoteMapper evaluationsUpvoteMapper;
+    @Resource
+    private ContentReportService contentReportService;
 
     /**
      * 评论
@@ -45,21 +49,22 @@ public class EvaluationsServiceImpl implements EvaluationsService {
      */
     @Override
     public Result<Object> insert(Evaluations evaluations) {
-        // 原始评论文本
-        String content = evaluations.getContent();
-        // ====================Trie树敏感词过滤算法起始===============
-        AhoCorasickFilter ahoCorasickFilter = new AhoCorasickFilter(); // 创建过滤器实例
-        for (String sensitiveWord : AhoCorasickFilter.sensitiveWords) { // 添加词典
-            ahoCorasickFilter.addWord(sensitiveWord);
-        }
-        ahoCorasickFilter.buildFailurePointer(); // 构建失败指针
-        String filteredContent = ahoCorasickFilter.filter(content); // 过滤敏感词
-        // ====================结束======================================
-        evaluations.setContent(filteredContent); // 将过滤后的敏感词替换原始文本内容
+        AssertUtils.notNull(evaluations, "评论数据不能为空");
+        AssertUtils.hasText(evaluations.getContent(), "评论内容不能为空");
+        AssertUtils.notNull(evaluations.getContentId(), "评论对象不能为空");
+        AssertUtils.hasText(evaluations.getContentType(), "评论模块不能为空");
+        SubmissionThrottleUtils.ensureAllowed("evaluations:" + evaluations.getContentType(), LocalThreadHolder.getUserId());
+        ContentSafetyUtils.FilterResult filterResult = ContentSafetyUtils.filter(evaluations.getContent());
+        evaluations.setContent(filterResult.getContent());
+        evaluations.setStatus(filterResult.isHitSensitive()
+                ? ContentModerationStatusEnum.PENDING_REVIEW.getType()
+                : ContentModerationStatusEnum.NORMAL.getType());
         evaluations.setCommenterId(LocalThreadHolder.getUserId());
-        User user = userMapper.getUserById(LocalThreadHolder.getUserId());
         evaluations.setCreateTime(LocalDateTime.now());
         evaluationsMapper.save(evaluations);
+        if (filterResult.isHitSensitive()) {
+            return ApiResult.success("评论已提交，因触发敏感词已进入审核");
+        }
         return ApiResult.success("评论成功");
     }
 
@@ -98,9 +103,15 @@ public class EvaluationsServiceImpl implements EvaluationsService {
      */
     @Override
     public Result<String> deleteById(Integer id) {
+        AssertUtils.notNull(id, "评论ID不能为空");
+        Evaluations evaluations = evaluationsMapper.selectById(id);
+        AssertUtils.notNull(evaluations, "评论不存在");
+        boolean isAdmin = RoleEnum.ADMIN.getRole().equals(LocalThreadHolder.getRoleId());
+        AssertUtils.isTrue(isAdmin || LocalThreadHolder.getUserId().equals(evaluations.getCommenterId()), "无删除权限");
         ArrayList<Integer> ids = new ArrayList<>();
         ids.add(id);
         evaluationsMapper.batchDelete(ids);
+        contentReportService.clearHandledReports(ContentReportTargetTypeEnum.COMMENT.getType(), id);
         return ApiResult.success();
     }
 
@@ -111,6 +122,18 @@ public class EvaluationsServiceImpl implements EvaluationsService {
      */
     @Override
     public Result<Void> update(Evaluations evaluations) {
+        AssertUtils.notNull(evaluations, "评论数据不能为空");
+        AssertUtils.notNull(evaluations.getId(), "评论ID不能为空");
+        AssertUtils.hasText(evaluations.getContent(), "评论内容不能为空");
+        Evaluations dbEvaluations = evaluationsMapper.selectById(evaluations.getId());
+        AssertUtils.notNull(dbEvaluations, "评论不存在");
+        boolean isAdmin = RoleEnum.ADMIN.getRole().equals(LocalThreadHolder.getRoleId());
+        AssertUtils.isTrue(isAdmin || LocalThreadHolder.getUserId().equals(dbEvaluations.getCommenterId()), "无修改权限");
+        ContentSafetyUtils.FilterResult filterResult = ContentSafetyUtils.filter(evaluations.getContent());
+        evaluations.setContent(filterResult.getContent());
+        evaluations.setStatus(filterResult.isHitSensitive()
+                ? ContentModerationStatusEnum.PENDING_REVIEW.getType()
+                : ContentModerationStatusEnum.NORMAL.getType());
         evaluationsMapper.update(evaluations);
         return ApiResult.success();
     }
@@ -153,5 +176,29 @@ public class EvaluationsServiceImpl implements EvaluationsService {
         rep.put("haveUpvote", !hasUpvote); // 返回操作后的状态
 
         return ApiResult.success(rep);
+    }
+
+    @Override
+    public Result<String> report(Integer id, String reason) {
+        ContentReport contentReport = new ContentReport();
+        contentReport.setTargetType(ContentReportTargetTypeEnum.COMMENT.getType());
+        contentReport.setTargetId(id);
+        contentReport.setReason(reason);
+        return contentReportService.save(contentReport);
+    }
+
+    @Override
+    public Result<String> moderate(Integer id, Integer status) {
+        AssertUtils.notNull(id, "评论ID不能为空");
+        AssertUtils.notNull(status, "审核状态不能为空");
+        AssertUtils.equals(RoleEnum.ADMIN.getRole(), LocalThreadHolder.getRoleId(), "非法操作");
+        AssertUtils.isTrue(ContentModerationStatusEnum.NORMAL.getType().equals(status)
+                || ContentModerationStatusEnum.BLOCKED.getType().equals(status), "仅支持通过或屏蔽");
+        Evaluations evaluations = evaluationsMapper.selectById(id);
+        AssertUtils.notNull(evaluations, "评论不存在");
+        evaluations.setStatus(status);
+        evaluationsMapper.updateById(evaluations);
+        contentReportService.clearHandledReports(ContentReportTargetTypeEnum.COMMENT.getType(), id);
+        return ApiResult.success(ContentModerationStatusEnum.NORMAL.getType().equals(status) ? "评论已通过" : "评论已屏蔽");
     }
 }

@@ -54,7 +54,6 @@
 </template>
 
 <script>
-// 登录页面 - B站「程序员辰星」原创出品
 import { setToken, setRole } from "@/utils/storage.js";
 
 export default {

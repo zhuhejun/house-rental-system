@@ -142,6 +142,11 @@
                 <div v-else>
                     <h3>我的服务评价</h3>
                     <div style="background-color: rgb(250,250,250);padding: 10px 20px;">
+                        <div style="margin-bottom: 10px;">
+                            <el-tag size="mini" :type="evaluationStatusType(houseOrderEvaluations[0])">
+                                {{ evaluationStatusText(houseOrderEvaluations[0]) }}
+                            </el-tag>
+                        </div>
                         <div style="margin-block: 10px;">
                             <el-rate disabled v-model="houseOrderEvaluations[0].score" show-text>
                             </el-rate>
@@ -360,6 +365,21 @@ export default {
         handleCurrentChange(current) {
             this.houseOrderInfoQueryDto.current = current;
             this.fetchFreshData();
+        },
+        evaluationStatusText(evaluation) {
+            if (!evaluation || !evaluation.status) {
+                return '正常';
+            }
+            return evaluation.statusText || (evaluation.status === 2 ? '待审核' : evaluation.status === 3 ? '已屏蔽' : '正常');
+        },
+        evaluationStatusType(evaluation) {
+            if (!evaluation || !evaluation.status || evaluation.status === 1) {
+                return 'success';
+            }
+            if (evaluation.status === 2) {
+                return 'warning';
+            }
+            return 'danger';
         }
     },
 };

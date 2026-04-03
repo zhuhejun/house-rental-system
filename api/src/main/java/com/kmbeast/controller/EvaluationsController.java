@@ -89,5 +89,17 @@ public class EvaluationsController {
         return evaluationsService.deleteById(id);
     }
 
+    @PostMapping(value = "/report/{id}")
+    @ResponseBody
+    public Result<String> report(@PathVariable Integer id, @RequestParam String reason) {
+        return evaluationsService.report(id, reason);
+    }
+
+    @PutMapping(value = "/moderate/{id}")
+    @ResponseBody
+    public Result<String> moderate(@PathVariable Integer id, @RequestParam Integer status) {
+        return evaluationsService.moderate(id, status);
+    }
+
 }
 

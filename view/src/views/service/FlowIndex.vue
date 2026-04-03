@@ -125,7 +125,6 @@
 </template>
 
 <script>
-// B站 「程序辰星」原创出品
 import AutoInput from "@/components/AutoInput.vue"; // 自己封装好的输入框组件
 import Tab from "@/components/Tab" // 导入封装好的Tab组件
 import LineChart from "@/components/LineChart" // 导入封装好的Tab组件

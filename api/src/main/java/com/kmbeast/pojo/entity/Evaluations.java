@@ -19,6 +19,7 @@ public class Evaluations {
     private String contentType; // 内容类型，标识评论挂载的模块
     private String content; // 评论的内容
     private Integer contentId; // 内容的ID，与内容类型配合模块下评论查询
+    private Integer status; // 审核状态：1正常 2待审核 3已屏蔽
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss") // 这行注解的作用是将查询出来的时间按照这种格式化，返回前端
     private LocalDateTime createTime; // 评论时间
 }

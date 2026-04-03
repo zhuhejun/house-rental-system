@@ -39,8 +39,6 @@
 </template>
 
 <script>
-
-// B站「程序员辰星」原创出品
 import { get } from "@/utils/request"
 import router from "@/router/index";
 import { clearToken, clearRole, clearUserInfo, setUserInfo } from "@/utils/storage"
@@ -64,7 +62,12 @@ export default {
     created() {
         this.loadAdminRoutes();
         this.checkTokenAndLoadUser();
+        this.fetchContentReportSummary();
+        window.addEventListener('content-report-refresh', this.fetchContentReportSummary);
         this.handleRouteSelect('/adminLayout'); // 默认加载首页
+    },
+    beforeDestroy() {
+        window.removeEventListener('content-report-refresh', this.fetchContentReportSummary);
     },
     methods: {
 
@@ -96,6 +99,20 @@ export default {
         loadAdminRoutes() {
             const adminRoute = router.options.routes.find(r => r.path === '/admin');
             this.adminRoutes = (adminRoute && adminRoute.children) || [];
+        },
+
+        async fetchContentReportSummary() {
+            try {
+                const response = await get('content-report/pending-summary');
+                const summary = response && response.data ? response.data : {};
+                const total = Number(summary.total || 0);
+                const routeIndex = this.adminRoutes.findIndex(route => route.path === '/evaluations-manage');
+                if (routeIndex >= 0) {
+                    this.$set(this.adminRoutes[routeIndex], 'badgeDot', total > 0);
+                }
+            } catch (error) {
+                console.error('查询待处理举报统计失败:', error);
+            }
         },
 
         // 检查用户登录状态 - 校验Token令牌

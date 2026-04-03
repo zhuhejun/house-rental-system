@@ -19,7 +19,7 @@
         <div class="right">
             <h2 style="margin-top: 0;">城市待租房源分布</h2>
             <div class="city-list">
-                <div v-for="(city, index) in cityHouseList" :key="index" class="city-item">
+                <div v-for="(city, index) in sortedCityHouseList" :key="city.name + '-' + index" class="city-item">
                     <div class="city-info">
                         <span class="city-name">{{ city.name }}</span>
                         <span class="city-count">{{ city.count }}套</span>
@@ -99,7 +99,9 @@ export default {
         async fetchCityHouseRange(limit) {
             try {
                 const { data } = await this.$axios.get(`/dashboard/cityHouseRange/${limit}`);
-                this.cityHouseList = data;
+                this.cityHouseList = Array.isArray(data)
+                    ? data.filter(item => item && item.name && String(item.name).trim())
+                    : [];
             } catch (error) {
                 console.error('城市待租房源分布:', error);
             }

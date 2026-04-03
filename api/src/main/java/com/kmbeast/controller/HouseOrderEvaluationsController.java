@@ -38,8 +38,7 @@ public class HouseOrderEvaluationsController {
     @DeleteMapping(value = "/{id}")
     @ResponseBody
     public Result<String> delete(@PathVariable Integer id) {
-        houseOrderEvaluationsService.removeById(id);
-        return ApiResult.success("预约看房评价删除成功");
+        return houseOrderEvaluationsService.deleteById(id);
     }
 
     /**
@@ -80,6 +79,12 @@ public class HouseOrderEvaluationsController {
     @ResponseBody
     public Result<List<HouseOrderEvaluationsVO>> houseList(@PathVariable Integer houseId) {
         return houseOrderEvaluationsService.houseList(houseId);
+    }
+
+    @PutMapping(value = "/moderate/{id}")
+    @ResponseBody
+    public Result<String> moderate(@PathVariable Integer id, @RequestParam Integer status) {
+        return houseOrderEvaluationsService.moderate(id, status);
     }
 
 }

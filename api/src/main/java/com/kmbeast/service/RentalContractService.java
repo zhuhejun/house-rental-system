@@ -35,6 +35,10 @@ public interface RentalContractService extends IService<RentalContract> {
 
     Result<String> applyTerminate(RentalContract rentalContract);
 
+    Result<String> confirmTerminate(Integer id);
+
+    Result<String> rejectTerminate(RentalContract rentalContract);
+
     Result<String> submitTerminateSettlement(RentalContract rentalContract);
 
     Result<String> adminApproveTerminate(Integer id);

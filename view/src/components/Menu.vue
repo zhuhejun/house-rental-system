@@ -12,6 +12,7 @@
 				<i :class="item.icon" class="menu-icon"
 					:style="{ fontWeight: activeIndex === item.path ? '600' : '' }"></i>
 				<span class="menu-title">{{ item.name }}</span>
+				<span v-if="item.badgeDot" class="menu-dot"></span>
 			</li>
 		</ul>
 	</div>
@@ -127,6 +128,16 @@ export default {
 .menu-title {
 	font-size: 14px;
 	transition: opacity 0.3s ease;
+}
+
+.menu-dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background-color: #f56c6c;
+	margin-left: auto;
+	margin-right: 8px;
+	box-shadow: 0 0 0 3px rgba(245, 108, 108, 0.12);
 }
 
 .active {

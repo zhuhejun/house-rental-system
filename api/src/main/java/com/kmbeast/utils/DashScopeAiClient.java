@@ -3,6 +3,9 @@ package com.kmbeast.utils;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.config.YamlPropertiesFactoryBean;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -12,6 +15,10 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.PostConstruct;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
 
 /**
  * 千问 DashScope OpenAI 兼容模式客户端
@@ -37,6 +44,72 @@ public class DashScopeAiClient {
     private Double temperature;
 
     @PostConstruct
+    public void init() {
+        loadLocalSecretsIfNecessary();
+        logConfig();
+    }
+
+    private void loadLocalSecretsIfNecessary() {
+        if (Boolean.TRUE.equals(enabled) && StringUtils.hasText(apiKey)) {
+            return;
+        }
+        Properties properties = loadLocalSecrets();
+        if (properties == null || properties.isEmpty()) {
+            return;
+        }
+        if (!Boolean.TRUE.equals(enabled)) {
+            String enabledValue = properties.getProperty("ai.dashscope.enabled");
+            if (StringUtils.hasText(enabledValue)) {
+                enabled = Boolean.parseBoolean(enabledValue.trim());
+            }
+        }
+        if (!StringUtils.hasText(apiKey)) {
+            apiKey = properties.getProperty("ai.dashscope.api-key", apiKey);
+        }
+        if (!StringUtils.hasText(baseUrl) || "https://dashscope.aliyuncs.com/compatible-mode/v1".equals(baseUrl)) {
+            baseUrl = properties.getProperty("ai.dashscope.base-url", baseUrl);
+        }
+        if (!StringUtils.hasText(model) || "qwen-plus".equals(model)) {
+            model = properties.getProperty("ai.dashscope.model", model);
+        }
+        String temperatureValue = properties.getProperty("ai.dashscope.temperature");
+        if (StringUtils.hasText(temperatureValue)) {
+            try {
+                temperature = Double.parseDouble(temperatureValue.trim());
+            } catch (NumberFormatException ignored) {
+            }
+        }
+    }
+
+    private Properties loadLocalSecrets() {
+        List<Resource> resources = new ArrayList<>();
+        for (File file : resolveCandidateFiles()) {
+            if (file.exists() && file.isFile()) {
+                resources.add(new FileSystemResource(file));
+            }
+        }
+        if (resources.isEmpty()) {
+            return null;
+        }
+        YamlPropertiesFactoryBean yaml = new YamlPropertiesFactoryBean();
+        yaml.setResources(resources.toArray(new Resource[0]));
+        return yaml.getObject();
+    }
+
+    private List<File> resolveCandidateFiles() {
+        List<File> files = new ArrayList<>();
+        String userDir = System.getProperty("user.dir");
+        if (StringUtils.hasText(userDir)) {
+            files.add(new File(userDir, "local-secrets.yml"));
+            files.add(new File(userDir, "api\\local-secrets.yml"));
+            File parent = new File(userDir).getParentFile();
+            if (parent != null) {
+                files.add(new File(parent, "api\\local-secrets.yml"));
+            }
+        }
+        return files;
+    }
+
     public void logConfig() {
         System.out.println("[AI] DashScope enabled=" + enabled
                 + ", baseUrl=" + baseUrl

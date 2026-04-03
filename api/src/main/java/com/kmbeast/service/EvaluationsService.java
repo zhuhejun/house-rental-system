@@ -23,4 +23,8 @@ public interface EvaluationsService {
 
     Result<Object> upvoteOperation(Evaluations evaluations);
 
+    Result<String> report(Integer id, String reason);
+
+    Result<String> moderate(Integer id, Integer status);
+
 }

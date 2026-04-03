@@ -19,4 +19,8 @@ public interface HouseOrderEvaluationsService extends IService<HouseOrderEvaluat
 
     Result<List<HouseOrderEvaluationsVO>> houseList(Integer houseId);
 
+    Result<String> deleteById(Integer id);
+
+    Result<String> moderate(Integer id, Integer status);
+
 }

@@ -223,10 +223,11 @@ export default {
         contractStatusText(status) {
             const map = {
                 4: '已生效',
-                9: '退租申请中',
+                9: '待提交退租结算',
                 10: '待退租审核',
                 11: '待退押',
-                12: '待审核退押'
+                12: '待审核退押',
+                14: '待对方确认退租'
             };
             return map[status] || '其他';
         },

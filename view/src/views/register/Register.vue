@@ -67,7 +67,6 @@
 </template>
 
 <script>
-// 注册页 - B站「程序员辰星」原创出品
 export default {
   name: "Register",
   data() {

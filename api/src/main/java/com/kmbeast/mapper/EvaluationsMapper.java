@@ -1,5 +1,6 @@
 package com.kmbeast.mapper;
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.kmbeast.pojo.dto.EvaluationsQueryDto;
 import com.kmbeast.pojo.entity.Evaluations;
 import com.kmbeast.pojo.vo.CommentChildVO;
@@ -11,7 +12,7 @@ import java.util.List;
 /**
  * 评论持久化接口
  */
-public interface EvaluationsMapper {
+public interface EvaluationsMapper extends BaseMapper<Evaluations> {
 
     /**
      * 查询指定内容下的全部评论

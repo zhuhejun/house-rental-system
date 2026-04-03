@@ -12,4 +12,6 @@ public class EvaluationsQueryDto extends QueryDto {
     private String contentType; //内容类型
     private Integer userId; //用户ID
     private String content; //评论的内容
+    private Integer status; //审核状态
+    private Boolean reportedOnly; //仅看有举报内容
 }

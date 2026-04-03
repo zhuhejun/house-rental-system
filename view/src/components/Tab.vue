@@ -3,7 +3,8 @@
         <div class="buttons-container">
             <button v-for="(button, index) in buttons" :key="index" :class="{ active: activeValue === button.value }"
                 @click="selectButton(button)">
-                {{ button.label }}
+                <span class="button-label">{{ button.label }}</span>
+                <span v-if="button.dot" class="button-dot"></span>
             </button>
             <div class="slider" :style="sliderStyle"></div>
         </div>
@@ -90,6 +91,18 @@ button {
     z-index: 1;
     transition: color 0.3s;
     text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.button-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #f56c6c;
+    box-shadow: 0 0 0 3px rgba(245, 108, 108, 0.12);
 }
 
 button.active {

@@ -897,7 +897,7 @@ public class AiAssistantServiceImpl implements AiAssistantService {
     }
 
     private String buildTerminateAnswer(UserBusinessContext context) {
-        String base = "未到期退租当前走这条链路：已生效 -> 退租申请中 -> 待退租审核 -> 待退押 -> 待审核退押 -> 已退租。管理员驳回后，房东可以根据审核意见重新提交；管理员通过退租后，房东还需要完成退押并上传凭证，审核通过后合同才真正结束。";
+        String base = "未到期退租当前走这条链路：已生效 -> 待对方确认退租 -> 待提交退租结算 -> 待退租审核 -> 待退押 -> 待审核退押 -> 已退租。现在租客或房东任意一方都可以先发起退租，但必须由另一方同意后，流程才会继续；另一方也有拒绝权限。";
         if (context == null) {
             return base;
         }
@@ -922,8 +922,11 @@ public class AiAssistantServiceImpl implements AiAssistantService {
     }
 
     private String buildTerminateStatusHint(Integer status) {
+        if (Objects.equals(status, RentalContractStatusEnum.STATUS_14.getType())) {
+            return "当前在等对方确认退租；只有对方同意后，流程才会继续。";
+        }
         if (Objects.equals(status, RentalContractStatusEnum.STATUS_9.getType())) {
-            return "下一步需要房东提交协商后的退押金额和退租凭证。";
+            return "双方已经同意退租，下一步需要房东提交协商后的退押金额和退租凭证。";
         }
         if (Objects.equals(status, RentalContractStatusEnum.STATUS_10.getType())) {
             return "当前在等管理员审核退租申请。";
@@ -997,7 +1000,8 @@ public class AiAssistantServiceImpl implements AiAssistantService {
                     .filter(item -> Objects.equals(item.getStatus(), RentalContractStatusEnum.STATUS_9.getType())
                             || Objects.equals(item.getStatus(), RentalContractStatusEnum.STATUS_10.getType())
                             || Objects.equals(item.getStatus(), RentalContractStatusEnum.STATUS_11.getType())
-                            || Objects.equals(item.getStatus(), RentalContractStatusEnum.STATUS_12.getType()))
+                            || Objects.equals(item.getStatus(), RentalContractStatusEnum.STATUS_12.getType())
+                            || Objects.equals(item.getStatus(), RentalContractStatusEnum.STATUS_14.getType()))
                     .findFirst()
                     .orElse(null);
         }

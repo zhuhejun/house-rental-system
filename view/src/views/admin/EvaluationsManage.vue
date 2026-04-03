@@ -2,65 +2,107 @@
   <div class="container">
     <div class="top-header">
       <div class="nav-left">
+        <Tab :buttons="sceneTabs" :initialActive="activeScene" @change="handleSceneChange" />
+        <Tab :buttons="statusTabButtons" :initialActive="String(queryStatus)" @change="handleStatusChange" />
       </div>
       <div class="nav-right">
-        <div>
-          <AutoInput placeholder="搜索评论" @listener="listener" />
-        </div>
+        <AutoInput :placeholder="activeScene === 'comment' ? '搜索评论内容' : '搜索服务评价内容'" @listener="listener" />
       </div>
     </div>
-    <!-- 表格及分页信息 -->
-    <div>
+
+    <div v-if="activeScene === 'comment'">
       <el-table :data="apiResult.data">
-        <el-table-column width="200" prop="username" label="评论者">
-          <template #default="scope">
-            <div class="over-text">
-              {{ scope.row.username }}
-            </div>
-          </template>
-        </el-table-column>
+        <el-table-column width="180" prop="username" label="评论者"></el-table-column>
         <el-table-column width="300" prop="content" label="评论内容">
           <template #default="scope">
-            <div class="over-text">
-              {{ scope.row.content }}
-            </div>
+            <div class="over-text">{{ scope.row.content }}</div>
           </template>
         </el-table-column>
-        <el-table-column prop="contentType" :sortable="true" width="128" label="所属模块"></el-table-column>
-        <el-table-column prop="upvoteCount" :sortable="true" width="128" label="点赞量"></el-table-column>
-        <el-table-column prop="parentId" :sortable="true" width="108" label="层级">
+        <el-table-column prop="contentType" width="130" align="center" label="所属模块"></el-table-column>
+        <el-table-column width="110" align="center" label="举报次数">
           <template #default="scope">
-            <div>{{ scope.row.parentId === null ? '父级' : '子级' }}</div>
+            {{ formatReportCount(scope.row.reportCount) }}
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" :sortable="true" width="168" label="评论时间"></el-table-column>
-        <el-table-column label="" align="center">
+        <el-table-column prop="status" width="120" align="center" label="审核状态">
           <template #default="scope">
-            <div class="operate-buttons">
-              <el-dropdown trigger="click" placement="bottom-end">
-                <span class="el-dropdown-link">
-                  <i class="el-icon-more"></i>
-                </span>
-                <el-dropdown-menu slot="dropdown">
-                  <el-dropdown-item @click.native="handleDelete(scope.row)"
-                    icon="el-icon-delete">删除评论</el-dropdown-item>
-                </el-dropdown-menu>
-              </el-dropdown>
+            <el-tag size="mini" :type="statusTagType(scope.row.status)">
+              {{ statusText(scope.row.status) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column width="168" align="center" label="评论时间">
+          <template #default="scope">
+            {{ scope.row.createTime || '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" align="center" width="180">
+          <template #default="scope">
+            <div class="operation-links">
+              <span v-if="scope.row.status !== 1" @click="moderateComment(scope.row, 1)">通过</span>
+              <span v-if="scope.row.status !== 3" @click="moderateComment(scope.row, 3)">屏蔽</span>
+              <span class="danger" @click="handleDelete(scope.row, 'comment')">删除</span>
             </div>
           </template>
         </el-table-column>
       </el-table>
-      <!-- 分页组件区域 -->
-      <div class="pager">
-        <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange"
-          :current-page="evaluationQueryDto.current" :page-sizes="[10, 20]" :page-size="evaluationQueryDto.size"
-          layout="total, sizes, prev, pager, next, jumper" :total="apiResult.total"></el-pagination>
-      </div>
     </div>
 
-    <!-- 删除确认弹窗 -->
-    <el-dialog title="删除评论" :show-close="false" :visible.sync="dialogDeletedVisible" width="20%">
-      <span>确定删除评论数据？</span>
+    <div v-else>
+      <el-table :data="apiResult.data">
+        <el-table-column width="160" prop="username" label="评价用户"></el-table-column>
+        <el-table-column width="120" align="center" label="预约单ID">
+          <template #default="scope">
+            {{ scope.row.houseOrderInfoId || '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column width="90" align="center" label="评分">
+          <template #default="scope">
+            <span class="score-text">{{ scope.row.score || 0 }} 分</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="text" label="评价内容">
+          <template #default="scope">
+            <div class="over-text">{{ scope.row.text }}</div>
+          </template>
+        </el-table-column>
+        <el-table-column width="110" align="center" label="举报次数">
+          <template #default="scope">
+            {{ formatReportCount(scope.row.reportCount) }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="status" width="120" align="center" label="审核状态">
+          <template #default="scope">
+            <el-tag size="mini" :type="statusTagType(scope.row.status)">
+              {{ statusText(scope.row.status) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column width="168" align="center" label="评价时间">
+          <template #default="scope">
+            {{ scope.row.createTime || '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" align="center" width="180">
+          <template #default="scope">
+            <div class="operation-links">
+              <span v-if="scope.row.status !== 1" @click="moderateServiceEvaluation(scope.row, 1)">通过</span>
+              <span v-if="scope.row.status !== 3" @click="moderateServiceEvaluation(scope.row, 3)">屏蔽</span>
+              <span class="danger" @click="handleDelete(scope.row, 'service')">删除</span>
+            </div>
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
+
+    <div class="pager">
+      <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange"
+        :current-page="queryDto.current" :page-sizes="[10, 20]" :page-size="queryDto.size"
+        layout="total, sizes, prev, pager, next, jumper" :total="apiResult.total"></el-pagination>
+    </div>
+
+    <el-dialog title="删除内容" :show-close="false" :visible.sync="dialogDeletedVisible" width="20%">
+      <span>确定删除这条内容吗？</span>
       <span slot="footer" class="dialog-footer">
         <el-button size="mini" @click="dialogDeletedVisible = false">取消</el-button>
         <el-button size="mini" type="primary" @click="confirmDeleted">确定</el-button>
@@ -70,133 +112,233 @@
 </template>
 
 <script>
-// B站 「程序辰星」原创出品
-import AutoInput from "@/components/AutoInput.vue"; // 自己封装好的输入框组件
+import AutoInput from "@/components/AutoInput.vue";
+import Tab from "@/components/Tab.vue";
+
 export default {
-  components: { AutoInput }, // 注册组件
+  components: { AutoInput, Tab },
   data() {
     return {
-      id: null, // 页面即将删除的数据ID
-      apiResult: { // 后端返回的查询数据的响应数据
-        data: [], // 数据项
-        total: 0, // 符合条件的数据总想 - 初始赋值为0
+      activeScene: 'comment',
+      queryStatus: 2,
+      sceneTabs: [
+        { label: '普通评论', value: 'comment' },
+        { label: '服务评价', value: 'service' }
+      ],
+      statusTabs: [
+        { label: '待审核', value: '2' },
+        { label: '有举报', value: 'reported' },
+        { label: '正常', value: '1' },
+        { label: '已屏蔽', value: '3' },
+        { label: '全部', value: 'null' }
+      ],
+      reportSummary: {
+        comment: 0,
+        service: 0,
+        total: 0
       },
-      evaluationQueryDto: { // 搜索条件
-        current: 1, // 当前页 - 初始是第一页
-        size: 10, // 页面显示大小 - 初始是10条
+      apiResult: {
+        data: [],
+        total: 0
       },
-      dialogDeletedVisible: false, // 删除弹窗控制开关变量 - 初始是关（false）
+      queryDto: {
+        current: 1,
+        size: 10,
+        content: ''
+      },
+      dialogDeletedVisible: false,
+      deletedId: null,
+      deletedType: 'comment'
     };
   },
+  computed: {
+    statusTabButtons() {
+      const currentCount = this.activeScene === 'comment'
+        ? Number(this.reportSummary.comment || 0)
+        : Number(this.reportSummary.service || 0);
+      return this.statusTabs.map((tab) => ({
+        ...tab,
+        dot: tab.value === 'reported' && currentCount > 0
+      }));
+    },
+    queryPayload() {
+      const payload = {
+        current: this.queryDto.current,
+        size: this.queryDto.size
+      };
+      if (this.queryDto.content) {
+        if (this.activeScene === 'comment') {
+          payload.content = this.queryDto.content;
+        } else {
+          payload.text = this.queryDto.content;
+        }
+      }
+      if (this.queryStatus === 'reported') {
+        payload.reportedOnly = true;
+      } else if (this.queryStatus !== null) {
+        payload.status = this.queryStatus;
+      }
+      return payload;
+    }
+  },
   created() {
+    this.fetchReportSummary();
     this.fetchFreshData();
   },
   methods: {
-    // 输入框组件输入回传
-    listener(text) {
-      this.evaluationQueryDto.content = text; // 赋值查询条件的内容
-      this.fetchFreshData(); // 重新加载数据
+    handleSceneChange({ value }) {
+      this.activeScene = value;
+      this.queryDto.current = 1;
+      this.queryDto.content = '';
+      this.fetchFreshData();
     },
-    // 查询评论数据
+    handleStatusChange({ value }) {
+      if (value === 'null') {
+        this.queryStatus = null;
+      } else if (value === 'reported') {
+        this.queryStatus = 'reported';
+      } else {
+        this.queryStatus = Number(value);
+      }
+      this.queryDto.current = 1;
+      this.fetchFreshData();
+    },
+    listener(text) {
+      this.queryDto.content = text;
+      this.queryDto.current = 1;
+      this.fetchFreshData();
+    },
+    async fetchReportSummary() {
+      try {
+        const response = await this.$axios.get('/content-report/pending-summary');
+        const summary = response && response.data ? response.data : {};
+        this.reportSummary = {
+          comment: Number(summary.comment || 0),
+          service: Number(summary.service || 0),
+          total: Number(summary.total || 0)
+        };
+        window.dispatchEvent(new Event('content-report-refresh'));
+      } catch (error) {
+        console.error('查询待处理举报统计失败:', error);
+      }
+    },
+    statusText(status) {
+      const map = { 1: '正常', 2: '待审核', 3: '已屏蔽' };
+      return map[status] || '未知';
+    },
+    statusTagType(status) {
+      if (status === 1) return 'success';
+      if (status === 2) return 'warning';
+      return 'danger';
+    },
+    formatReportCount(reportCount) {
+      return `${Number(reportCount || 0)} 次`;
+    },
     async fetchFreshData() {
       try {
-        const { data, total } = await this.$axios.post('/evaluations/query', this.evaluationQueryDto);
+        const url = this.activeScene === 'comment' ? '/evaluations/query' : '/house-order-evaluations/list';
+        const { data, total } = await this.$axios.post(url, this.queryPayload);
         this.apiResult.data = data;
         this.apiResult.total = total;
       } catch (error) {
-        console.error('查询评论信息异常:', error);
+        this.$message.error(error.message || '查询内容审核数据失败');
       }
     },
-    // 分页 - 处理页面页数切换
-    handleSizeChange(size) {
-      this.evaluationQueryDto.size = size; // 当前页面大小重置
-      this.evaluationQueryDto.currrent = 1; // 当前页设置为第一页
-      this.fetchFreshData(); // 重新加载页面数据
+    async moderateComment(row, status) {
+      try {
+        const { message } = await this.$axios.put(`/evaluations/moderate/${row.id}?status=${status}`);
+        this.$message.success(message || '操作成功');
+        this.fetchReportSummary();
+        this.fetchFreshData();
+      } catch (error) {
+        this.$message.error(error.message || '评论审核失败');
+      }
     },
-    // 分页 - 处理页面当前页切换
-    handleCurrentChange(current) {
-      this.evaluationQueryDto.current = current; // 当前页选中
-      this.fetchFreshData(); // 重新加载页面数据
+    async moderateServiceEvaluation(row, status) {
+      try {
+        const { message } = await this.$axios.put(`/house-order-evaluations/moderate/${row.id}?status=${status}`);
+        this.$message.success(message || '操作成功');
+        this.fetchReportSummary();
+        this.fetchFreshData();
+      } catch (error) {
+        this.$message.error(error.message || '服务评价审核失败');
+      }
     },
-    // 表格点击删除评论
-    handleDelete(row) {
-      this.dialogDeletedVisible = true; // 开启删除弹窗确认
-      this.id = row.id;
+    handleDelete(row, type) {
+      this.deletedId = row.id;
+      this.deletedType = type;
+      this.dialogDeletedVisible = true;
     },
-    // 评论删除
     async confirmDeleted() {
       try {
-        const { code } = await this.$axios.delete(`/evaluations/${this.id}`);
-        if (code === 200) {
-          this.$notify.success({
-            title: '评论删除',
-            message: '删除成功',
-            position: 'buttom-right',
-            suration: 1000,
-          });
-          this.dialogDeletedVisible = false; // 关闭删除确认弹窗
-          this.id = null; // 将标识ID置位
-          this.fetchFreshData(); // 删除评论数据之后，重新加载评论数据
-        }
+        const url = this.deletedType === 'comment'
+          ? `/evaluations/${this.deletedId}`
+          : `/house-order-evaluations/${this.deletedId}`;
+        await this.$axios.delete(url);
+        this.$message.success('删除成功');
+        this.dialogDeletedVisible = false;
+        this.deletedId = null;
+        this.fetchReportSummary();
+        this.fetchFreshData();
       } catch (error) {
-        console.log("删除评论数据异常：", error);
+        this.$message.error(error.message || '删除失败');
       }
-    }
-  },
-};
-</script>
-<style scoped lang="scss">
-.pager {
-  margin-block: 20px;
-}
-
-/* 默认隐藏操作按钮 */
-.operate-buttons {
-  opacity: 0;
-  transition: opacity 0.3s;
-  /* 添加过渡效果 */
-  cursor: pointer;
-
-  i {
-    padding: 8px;
-    border-radius: 6px;
-    transition: all .5s ease;
-
-    &:hover {
-      background-color: rgb(236, 237, 238);
+    },
+    handleSizeChange(size) {
+      this.queryDto.size = size;
+      this.queryDto.current = 1;
+      this.fetchFreshData();
+    },
+    handleCurrentChange(current) {
+      this.queryDto.current = current;
+      this.fetchFreshData();
     }
   }
+};
+</script>
 
-}
-
-/* 行悬停时显示操作按钮 */
-.el-table__body tr:hover .operate-buttons {
-  opacity: 1;
-}
-
+<style scoped lang="scss">
 .container {
   margin: 10px 20px;
 }
 
 .top-header {
-  margin-block: 10px;
-  padding-inline: 10px;
-  border-radius: 5px;
+  margin-block: 10px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
 
   .nav-left,
   .nav-right {
     display: flex;
-    justify-content: left;
     align-items: center;
     gap: 10px;
   }
+}
 
-  .nav-left {
-    display: flex;
+.pager {
+  margin-block: 20px;
+}
+
+.operation-links {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  font-size: 13px;
+
+  span {
+    cursor: pointer;
+    color: #409EFF;
   }
 
+  .danger {
+    color: #F56C6C;
+  }
+}
+
+.score-text {
+  color: #e6a23c;
+  font-weight: 600;
 }
 </style>

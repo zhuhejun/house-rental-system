@@ -18,4 +18,14 @@ public class HouseOrderEvaluationsVO extends HouseOrderEvaluations {
      * 用户头像
      */
     private String avatar;
+
+    /**
+     * 审核状态文案
+     */
+    private String statusText;
+
+    /**
+     * 举报次数
+     */
+    private Integer reportCount;
 }
